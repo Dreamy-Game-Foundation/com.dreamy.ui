@@ -1,0 +1,22 @@
+{
+  "name": "com.dreamy.ui",
+  "version": "0.1.0",
+  "displayName": "Dreamy UI",
+  "description": "Reusable Unity UI panel, tab, button, safe area, and tween helpers inspired by the local Base.UI flow.",
+  "unity": "6000.0",
+  "type": "library",
+  "license": "UNLICENSED",
+  "author": {
+    "name": "Dreamy Studio"
+  },
+  "dependencies": {
+    "com.unity.ugui": "2.0.0"
+  },
+  "keywords": [
+    "ui",
+    "panel",
+    "tabs",
+    "tween",
+    "dreamy"
+  ]
+}

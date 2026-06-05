@@ -20,8 +20,10 @@ namespace Dreamy.UI
 
         protected override bool IsPersistent => false;
 
-        protected override void OnAwake()
+        protected override void Awake()
         {
+            base.Awake();
+
             if (panelRoot == null)
             {
                 panelRoot = transform;

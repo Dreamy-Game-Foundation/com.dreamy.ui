@@ -11,18 +11,18 @@ namespace Dreamy.UI
 
         public override UniTask Show()
         {
-            Tween tween = transform.DOScale(activeScale, durationIn)
-                .SetEase(easeIn)
-                .SetDelay(delayIn);
+            Tween tween = transform.DOScale(activeScale, DurationIn)
+                .SetEase(EaseIn)
+                .SetDelay(DelayIn);
 
             return Play(tween, Active);
         }
 
         public override UniTask Hide()
         {
-            Tween tween = transform.DOScale(inactiveScale, durationOut)
-                .SetEase(easeOut)
-                .SetDelay(delayOut);
+            Tween tween = transform.DOScale(inactiveScale, DurationOut)
+                .SetEase(EaseOut)
+                .SetDelay(DelayOut);
 
             return Play(tween, Inactive);
         }

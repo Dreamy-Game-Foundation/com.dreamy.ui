@@ -32,18 +32,18 @@ namespace Dreamy.UI
 
         public override UniTask Show()
         {
-            Tween tween = rectTransform.DOAnchorPos(activePosition, durationIn)
-                .SetEase(easeIn)
-                .SetDelay(delayIn);
+            Tween tween = rectTransform.DOAnchorPos(activePosition, DurationIn)
+                .SetEase(EaseIn)
+                .SetDelay(DelayIn);
 
             return Play(tween, Active);
         }
 
         public override UniTask Hide()
         {
-            Tween tween = rectTransform.DOAnchorPos(inactivePosition, durationOut)
-                .SetEase(easeOut)
-                .SetDelay(delayOut);
+            Tween tween = rectTransform.DOAnchorPos(inactivePosition, DurationOut)
+                .SetEase(EaseOut)
+                .SetDelay(DelayOut);
 
             return Play(tween, Inactive);
         }

@@ -49,6 +49,14 @@ Use transition when opening a child panel over the current panel:
 await PanelManager.Instance.Transition<ShopPanel>("ui_shop");
 ```
 
+## Tween Settings
+
+Create a shared tween asset from `Assets/Create/Dreamy/UI/Tween Settings` and
+store the default asset at
+`Assets/Resources/Tween/TweenBaseSettings.asset`. Tween components load that
+asset automatically from `Reset()` and retry during initialization when the
+reference is missing.
+
 ## Scope
 
 This package owns reusable runtime UI helpers. Game-specific popups, concrete panel prefabs, scene flow, sound routing, and localization belong in the game template or game project.

@@ -6,20 +6,24 @@ namespace Dreamy.UI
 {
     public abstract class UITweenBase : MonoBehaviour, ITween
     {
+        private const string DefaultSettingsPath = "Tween/TweenBaseSettings";
+
         [SerializeField] protected ETweenRun runType = ETweenRun.Auto;
-        [SerializeField] protected Ease easeIn = Ease.OutBack;
-        [SerializeField] protected Ease easeOut = Ease.InBack;
-        [SerializeField] protected float durationIn = 0.25f;
-        [SerializeField] protected float durationOut = 0.2f;
-        [SerializeField] protected float delayIn;
-        [SerializeField] protected float delayOut;
+        [SerializeField] protected TweenSettings settings;
 
         private bool isInitialized;
 
         public bool IsAutoRun => runType == ETweenRun.Auto;
+        protected Ease EaseIn => settings ? settings.EaseIn : Ease.OutBack;
+        protected Ease EaseOut => settings ? settings.EaseOut : Ease.InBack;
+        protected float DurationIn => settings ? settings.DurationIn : 0.25f;
+        protected float DurationOut => settings ? settings.DurationOut : 0.2f;
+        protected float DelayIn => settings ? settings.DelayIn : 0f;
+        protected float DelayOut => settings ? settings.DelayOut : 0f;
 
         protected virtual void Reset()
         {
+            settings = Resources.Load<TweenSettings>(DefaultSettingsPath);
         }
 
         public async UniTask Init()
@@ -40,6 +44,11 @@ namespace Dreamy.UI
 
         protected virtual UniTask Setup()
         {
+            if (!settings)
+            {
+                settings = Resources.Load<TweenSettings>(DefaultSettingsPath);
+            }
+
             return UniTask.CompletedTask;
         }
 

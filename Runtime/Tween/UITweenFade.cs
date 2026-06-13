@@ -26,9 +26,9 @@ namespace Dreamy.UI
 
         public override UniTask Show()
         {
-            Tween tween = canvasGroup.DOFade(1f, durationIn)
-                .SetEase(easeIn)
-                .SetDelay(delayIn);
+            Tween tween = canvasGroup.DOFade(1f, DurationIn)
+                .SetEase(EaseIn)
+                .SetDelay(DelayIn);
 
             return Play(tween, Active);
         }
@@ -36,9 +36,9 @@ namespace Dreamy.UI
         public override UniTask Hide()
         {
             canvasGroup.interactable = false;
-            Tween tween = canvasGroup.DOFade(0f, durationOut)
-                .SetEase(easeOut)
-                .SetDelay(delayOut);
+            Tween tween = canvasGroup.DOFade(0f, DurationOut)
+                .SetEase(EaseOut)
+                .SetDelay(DelayOut);
 
             return Play(tween, Inactive);
         }

@@ -4,15 +4,14 @@ using UnityEngine;
 
 namespace Dreamy.UI
 {
-    public class UITweenMove : UITweenBase
+    public sealed class UITweenSize : UITweenBase
     {
-        private const string SettingsPath = "Tween/MoveTweenSettings";
+        private const string SettingsPath = "Tween/SizeTweenSettings";
 
         [SerializeField] private RectTransform rectTransform;
-        [SerializeField] private Vector2 offset;
+        [SerializeField] private Vector2 inactiveSize;
 
-        private Vector2 activePosition;
-        private Vector2 inactivePosition;
+        private Vector2 activeSize;
 
         protected override string DefaultSettingsPath => SettingsPath;
 
@@ -24,42 +23,45 @@ namespace Dreamy.UI
 
         protected override UniTask Setup()
         {
-            if (rectTransform == null)
+            if (!rectTransform)
             {
                 rectTransform = transform as RectTransform;
             }
 
-            activePosition = rectTransform.anchoredPosition;
-            inactivePosition = activePosition + offset;
+            if (!rectTransform)
+            {
+                throw new MissingComponentException(
+                    $"{nameof(UITweenSize)} requires a RectTransform.");
+            }
+
+            activeSize = rectTransform.sizeDelta;
             return UniTask.CompletedTask;
         }
 
         public override UniTask Show()
         {
-            Tween tween = rectTransform.DOAnchorPos(activePosition, DurationIn)
+            Tween tween = rectTransform.DOSizeDelta(activeSize, DurationIn)
                 .SetEase(EaseIn)
                 .SetDelay(DelayIn);
-
             return Play(tween, Active);
         }
 
         public override UniTask Hide()
         {
-            Tween tween = rectTransform.DOAnchorPos(inactivePosition, DurationOut)
+            Tween tween = rectTransform.DOSizeDelta(inactiveSize, DurationOut)
                 .SetEase(EaseOut)
                 .SetDelay(DelayOut);
-
             return Play(tween, Inactive);
         }
 
         protected override void Active()
         {
-            rectTransform.anchoredPosition = activePosition;
+            rectTransform.sizeDelta = activeSize;
         }
 
         protected override void Inactive()
         {
-            rectTransform.anchoredPosition = inactivePosition;
+            rectTransform.sizeDelta = inactiveSize;
         }
     }
 }

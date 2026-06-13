@@ -51,11 +51,19 @@ await PanelManager.Instance.Transition<ShopPanel>("ui_shop");
 
 ## Tween Settings
 
-Create a shared tween asset from `Assets/Create/Dreamy/UI/Tween Settings` and
-store the default asset at
-`Assets/Resources/Tween/TweenBaseSettings.asset`. Tween components load that
-asset automatically from `Reset()` and retry during initialization when the
-reference is missing.
+Create tween assets from `Assets/Create/Dreamy/UI/Tween Settings`. Each tween
+loads its own default asset from `Resources/Tween`:
+
+- `MoveTweenSettings.asset`
+- `ScaleTweenSettings.asset`
+- `FadeTweenSettings.asset`
+- `RotateTweenSettings.asset`
+- `SizeTweenSettings.asset`
+- `ColorTweenSettings.asset`
+
+Tween components load their default asset from `Reset()` and retry during
+initialization when the reference is missing. Show/hide delays remain on each
+component so sequences can be staggered directly in the Inspector.
 
 ## Scope
 

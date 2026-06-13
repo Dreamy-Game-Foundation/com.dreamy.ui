@@ -1,10 +1,11 @@
 using DG.Tweening;
 using UnityEngine;
 
+
 namespace Dreamy.UI
 {
     [CreateAssetMenu(
-        fileName = "TweenBaseSettings",
+        fileName = "TweenSettings",
         menuName = "Dreamy/UI/Tween Settings")]
     public sealed class TweenSettings : ScriptableObject
     {
@@ -12,7 +13,5 @@ namespace Dreamy.UI
         public Ease EaseOut = Ease.InBack;
         public float DurationIn = 0.25f;
         public float DurationOut = 0.2f;
-        public float DelayIn;
-        public float DelayOut;
     }
 }

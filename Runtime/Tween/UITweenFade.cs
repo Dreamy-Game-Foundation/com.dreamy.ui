@@ -6,7 +6,11 @@ namespace Dreamy.UI
 {
     public class UITweenFade : UITweenBase
     {
+        private const string SettingsPath = "Tween/FadeTweenSettings";
+
         [SerializeField] private CanvasGroup canvasGroup;
+
+        protected override string DefaultSettingsPath => SettingsPath;
 
         protected override void Reset()
         {

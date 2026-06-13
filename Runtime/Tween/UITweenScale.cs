@@ -6,8 +6,12 @@ namespace Dreamy.UI
 {
     public class UITweenScale : UITweenBase
     {
+        private const string SettingsPath = "Tween/ScaleTweenSettings";
+
         [SerializeField] private float inactiveScale;
         [SerializeField] private float activeScale = 1f;
+
+        protected override string DefaultSettingsPath => SettingsPath;
 
         public override UniTask Show()
         {

@@ -1,65 +1,68 @@
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Dreamy.UI
 {
-    public class UITweenMove : UITweenBase
+    public sealed class UITweenColor : UITweenBase
     {
-        private const string SettingsPath = "Tween/MoveTweenSettings";
+        private const string SettingsPath = "Tween/ColorTweenSettings";
 
-        [SerializeField] private RectTransform rectTransform;
-        [SerializeField] private Vector2 offset;
+        [SerializeField] private Graphic graphic;
+        [SerializeField] private Color inactiveColor = Color.clear;
 
-        private Vector2 activePosition;
-        private Vector2 inactivePosition;
+        private Color activeColor;
 
         protected override string DefaultSettingsPath => SettingsPath;
 
         protected override void Reset()
         {
             base.Reset();
-            rectTransform = transform as RectTransform;
+            graphic = GetComponent<Graphic>();
         }
 
         protected override UniTask Setup()
         {
-            if (rectTransform == null)
+            if (!graphic)
             {
-                rectTransform = transform as RectTransform;
+                graphic = GetComponent<Graphic>();
             }
 
-            activePosition = rectTransform.anchoredPosition;
-            inactivePosition = activePosition + offset;
+            if (!graphic)
+            {
+                throw new MissingComponentException(
+                    $"{nameof(UITweenColor)} requires a Graphic component.");
+            }
+
+            activeColor = graphic.color;
             return UniTask.CompletedTask;
         }
 
         public override UniTask Show()
         {
-            Tween tween = rectTransform.DOAnchorPos(activePosition, DurationIn)
+            Tween tween = graphic.DOColor(activeColor, DurationIn)
                 .SetEase(EaseIn)
                 .SetDelay(DelayIn);
-
             return Play(tween, Active);
         }
 
         public override UniTask Hide()
         {
-            Tween tween = rectTransform.DOAnchorPos(inactivePosition, DurationOut)
+            Tween tween = graphic.DOColor(inactiveColor, DurationOut)
                 .SetEase(EaseOut)
                 .SetDelay(DelayOut);
-
             return Play(tween, Inactive);
         }
 
         protected override void Active()
         {
-            rectTransform.anchoredPosition = activePosition;
+            graphic.color = activeColor;
         }
 
         protected override void Inactive()
         {
-            rectTransform.anchoredPosition = inactivePosition;
+            graphic.color = inactiveColor;
         }
     }
 }

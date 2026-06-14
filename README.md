@@ -43,6 +43,14 @@ MainMenuPanel panel = await PanelManager.Instance.Show<MainMenuPanel>("ui_main_m
 await PanelManager.Instance.Close<MainMenuPanel>();
 ```
 
+Panels can override `Layer` to select `Screen`, `Popup`, or `Overlay`. Add a
+`UILayerRoot` child for each layer under `PanelManager`; the manager discovers
+them automatically. The marker renames its GameObject to match the selected
+layer. Missing roots fall back to the manager transform.
+
+Override `CanCache` with `true` to deactivate a hidden panel instead of
+destroying it. A later `Show<TPanel>()` reuses the cached instance.
+
 Use transition when opening a child panel over the current panel:
 
 ```csharp

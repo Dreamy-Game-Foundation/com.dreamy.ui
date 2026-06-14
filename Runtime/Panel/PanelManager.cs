@@ -10,8 +10,9 @@ namespace Dreamy.UI
 {
     public sealed class PanelManager : MonoSingleton<PanelManager>
     {
-        [SerializeField] private Transform panelRoot;
-
+        private readonly Dictionary<UILayer, Transform> layerRoots =
+            new Dictionary<UILayer, Transform>();
+        private readonly List<UIPanel> panels = new List<UIPanel>();
         private readonly List<UIPanel> stackPanels = new List<UIPanel>();
 
         public UIPanel LastPanel => stackPanels.Count > 0 ? stackPanels[stackPanels.Count - 1] : null;
@@ -24,10 +25,12 @@ namespace Dreamy.UI
         {
             base.Awake();
 
-            if (panelRoot == null)
-            {
-                panelRoot = transform;
-            }
+            RefreshLayerRoots(true);
+        }
+
+        private void OnValidate()
+        {
+            RefreshLayerRoots(false);
         }
 
         private async void Start()
@@ -45,7 +48,10 @@ namespace Dreamy.UI
 
             foreach (UIPanel panel in childPanels)
             {
-                panel.Show().Forget();
+                if (panel.ShowOnStart)
+                {
+                    panel.Show().Forget();
+                }
             }
         }
 
@@ -60,7 +66,7 @@ namespace Dreamy.UI
         public async UniTask<TPanel> Create<TPanel>(string address) where TPanel : UIPanel
         {
             GameObject prefab = await AssetLoader.LoadAsync<GameObject>(address);
-            GameObject instance = Instantiate(prefab, panelRoot);
+            GameObject instance = Instantiate(prefab, transform);
             TPanel panel = instance.GetComponent<TPanel>();
 
             if (panel == null)
@@ -69,6 +75,8 @@ namespace Dreamy.UI
                 throw new MissingComponentException($"Addressable UI prefab '{address}' does not contain {typeof(TPanel).Name}.");
             }
 
+            instance.transform.SetParent(GetLayerRoot(panel.Layer), false);
+
             await panel.Init();
             await panel.PostInit();
             return panel;
@@ -76,15 +84,18 @@ namespace Dreamy.UI
 
         public async UniTask<TPanel> Show<TPanel>(string address) where TPanel : UIPanel
         {
-            TPanel panel = await Create<TPanel>(address);
+            if (!TryGet(out TPanel panel))
+            {
+                panel = await Create<TPanel>(address);
+            }
+
             await panel.Show();
             return panel;
         }
 
         public async UniTask Close<TPanel>() where TPanel : UIPanel
         {
-            UIPanel panel = Get<TPanel>();
-            if (panel == null)
+            if (!TryGet(out TPanel panel))
             {
                 return;
             }
@@ -92,19 +103,31 @@ namespace Dreamy.UI
             await panel.Hide();
         }
 
-        public UIPanel Get<TPanel>() where TPanel : UIPanel
+        public TPanel Get<TPanel>() where TPanel : UIPanel
         {
-            for (int i = stackPanels.Count - 1; i >= 0; i--)
+            if (TryGet(out TPanel panel))
             {
-                UIPanel panel = stackPanels[i];
-                if (panel != null && panel.GetType() == typeof(TPanel))
-                {
-                    return panel;
-                }
+                return panel;
             }
 
             Debug.LogWarning($"[PANEL] Not found panel {typeof(TPanel).Name}.");
             return null;
+        }
+
+        public bool TryGet<TPanel>(out TPanel result) where TPanel : UIPanel
+        {
+            for (int i = panels.Count - 1; i >= 0; i--)
+            {
+                UIPanel panel = panels[i];
+                if (panel != null && panel.GetType() == typeof(TPanel))
+                {
+                    result = (TPanel)panel;
+                    return true;
+                }
+            }
+
+            result = null;
+            return false;
         }
 
         public async UniTask<TPanel> Transition<TPanel>(string address) where TPanel : UIPanel
@@ -115,12 +138,35 @@ namespace Dreamy.UI
                 lastPanel.SetInteractable(false);
             }
 
-            TPanel newPanel = await Create<TPanel>(address);
+            if (!TryGet(out TPanel newPanel))
+            {
+                newPanel = await Create<TPanel>(address);
+            }
+
             if (lastPanel != null)
             {
-                newPanel.OnPreShow += () => lastPanel.HideTween().Forget();
-                newPanel.OnPreHide += () => lastPanel.ShowTween().Forget();
-                newPanel.OnPostHide += () => lastPanel.SetInteractable(true);
+                UIPanel previousPanel = lastPanel;
+                Action preShow = null;
+                Action preHide = null;
+                Action postHide = null;
+                preShow = () =>
+                {
+                    newPanel.OnPreShow -= preShow;
+                    previousPanel.HideTween().Forget();
+                };
+                preHide = () =>
+                {
+                    newPanel.OnPreHide -= preHide;
+                    previousPanel.ShowTween().Forget();
+                };
+                postHide = () =>
+                {
+                    newPanel.OnPostHide -= postHide;
+                    previousPanel.SetInteractable(true);
+                };
+                newPanel.OnPreShow += preShow;
+                newPanel.OnPreHide += preHide;
+                newPanel.OnPostHide += postHide;
             }
 
             await newPanel.Show();
@@ -129,15 +175,35 @@ namespace Dreamy.UI
 
         public void Register(UIPanel panel)
         {
-            if (panel != null && !stackPanels.Contains(panel))
+            if (panel != null && !panels.Contains(panel))
             {
-                stackPanels.Add(panel);
+                panel.transform.SetParent(GetLayerRoot(panel.Layer), false);
+                panels.Add(panel);
             }
         }
 
         public void Unregister(UIPanel panel)
         {
+            panels.Remove(panel);
             stackPanels.Remove(panel);
+        }
+
+        public void MarkShown(UIPanel panel)
+        {
+            stackPanels.Remove(panel);
+            stackPanels.Add(panel);
+        }
+
+        public void MarkHidden(UIPanel panel)
+        {
+            stackPanels.Remove(panel);
+        }
+
+        public Transform GetLayerRoot(UILayer layer)
+        {
+            return layerRoots.TryGetValue(layer, out Transform root)
+                ? root
+                : transform;
         }
 
         private void TryCloseCurrentPanel()
@@ -149,6 +215,47 @@ namespace Dreamy.UI
             }
 
             panel.Hide().Forget();
+        }
+
+        [ContextMenu("Create Missing Layer Roots")]
+        private void CreateMissingLayerRoots()
+        {
+            RefreshLayerRoots(true);
+        }
+
+        private void RefreshLayerRoots(bool createMissing)
+        {
+            layerRoots.Clear();
+            UILayerRoot[] roots = GetComponentsInChildren<UILayerRoot>(true);
+            foreach (UILayerRoot root in roots)
+            {
+                if (!layerRoots.TryAdd(root.Layer, root.transform))
+                {
+                    Debug.LogWarning(
+                        $"[PANEL] Multiple roots found for {root.Layer}. " +
+                        "The first root will be used.",
+                        root);
+                }
+            }
+
+            if (!createMissing)
+            {
+                return;
+            }
+
+            foreach (UILayer layer in Enum.GetValues(typeof(UILayer)))
+            {
+                if (layerRoots.ContainsKey(layer))
+                {
+                    continue;
+                }
+
+                GameObject rootObject = new GameObject(layer.ToString());
+                rootObject.transform.SetParent(transform, false);
+                UILayerRoot layerRoot = rootObject.AddComponent<UILayerRoot>();
+                layerRoot.SetLayer(layer);
+                layerRoots.Add(layer, rootObject.transform);
+            }
         }
     }
 }

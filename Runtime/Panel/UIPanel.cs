@@ -12,8 +12,12 @@ namespace Dreamy.UI
         [SerializeField] protected TweenPlayer tweenPlayer;
 
         private CancellationTokenSource tokenSource;
+        private PanelState state = PanelState.Hidden;
 
         public abstract bool CanBack { get; }
+        public virtual UILayer Layer => UILayer.Screen;
+        public virtual bool CanCache => false;
+        public virtual bool ShowOnStart => false;
 
         public event Action OnPreShow;
         public event Action OnPostShow;
@@ -44,19 +48,43 @@ namespace Dreamy.UI
 
         public async UniTask Show()
         {
+            if (state == PanelState.Showing || state == PanelState.Shown)
+            {
+                return;
+            }
+
+            state = PanelState.Showing;
             ResetToken();
             OnPreShow?.Invoke();
             gameObject.SetActive(true);
+            PanelManager.Instance.MarkShown(this);
             await ShowTween();
+            state = PanelState.Shown;
             OnPostShow?.Invoke();
         }
 
         public async UniTask Hide()
         {
+            if (state == PanelState.Hiding || state == PanelState.Hidden)
+            {
+                return;
+            }
+
+            state = PanelState.Hiding;
             ResetToken();
             OnPreHide?.Invoke();
             await HideTween();
-            Destroy(gameObject);
+            PanelManager.Instance.MarkHidden(this);
+            if (CanCache)
+            {
+                gameObject.SetActive(false);
+                state = PanelState.Hidden;
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+
             OnPostHide?.Invoke();
         }
 
@@ -79,6 +107,7 @@ namespace Dreamy.UI
             if (canvasGroup != null)
             {
                 canvasGroup.interactable = interactable;
+                canvasGroup.blocksRaycasts = interactable;
             }
         }
 
@@ -98,6 +127,14 @@ namespace Dreamy.UI
             tokenSource?.Cancel();
             tokenSource?.Dispose();
             tokenSource = new CancellationTokenSource();
+        }
+
+        private enum PanelState
+        {
+            Hidden,
+            Showing,
+            Shown,
+            Hiding
         }
     }
 }

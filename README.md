@@ -65,6 +65,14 @@ Tween components load their default asset from `Reset()` and retry during
 initialization when the reference is missing. Show/hide delays remain on each
 component so sequences can be staggered directly in the Inspector.
 
+Each tween can override the shared ease and duration values. For staggered
+lists, add `TweenDelayByIndex` to each animated item and one
+`TweenDelayControl` to their parent. The controller applies show/hide intervals
+in hierarchy order and can reverse the hide order.
+
+`UIScalable` can optionally run a lightweight idle pulse. Pointer press stops
+the idle tween; release completes its feedback animation and resumes idle.
+
 ## Scope
 
 This package owns reusable runtime UI helpers. Game-specific popups, concrete panel prefabs, scene flow, sound routing, and localization belong in the game template or game project.

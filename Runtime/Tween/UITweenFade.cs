@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Dreamy.UI
 {
+    [RequireComponent(typeof(CanvasGroup))]
     public class UITweenFade : UITweenBase
     {
         private const string SettingsPath = "Tween/FadeTweenSettings";
@@ -20,9 +21,9 @@ namespace Dreamy.UI
 
         protected override UniTask Setup()
         {
-            if (canvasGroup == null)
+            if (!canvasGroup)
             {
-                canvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
+                canvasGroup = GetComponent<CanvasGroup>();
             }
 
             return UniTask.CompletedTask;

@@ -11,5 +11,7 @@ namespace Dreamy.UI
         UniTask Show();
 
         UniTask Hide();
+
+        void Kill();
     }
 }

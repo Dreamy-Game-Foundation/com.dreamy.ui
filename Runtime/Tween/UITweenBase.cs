@@ -66,6 +66,12 @@ namespace Dreamy.UI
 
         public abstract UniTask Hide();
 
+        public void Kill()
+        {
+            currentTween?.Kill();
+            currentTween = null;
+        }
+
         public void SetDelayOverride(float showDelay, float hideDelay)
         {
             hasDelayOverride = true;

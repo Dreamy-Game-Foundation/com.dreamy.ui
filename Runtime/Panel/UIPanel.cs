@@ -13,6 +13,7 @@ namespace Dreamy.UI
 
         private CancellationTokenSource tokenSource;
         private PanelState state = PanelState.Hidden;
+        private int operationVersion;
 
         public abstract bool CanBack { get; }
         public virtual UILayer Layer => UILayer.Screen;
@@ -54,13 +55,36 @@ namespace Dreamy.UI
             }
 
             state = PanelState.Showing;
-            ResetToken();
+            int version = ResetToken();
             OnPreShow?.Invoke();
             gameObject.SetActive(true);
             PanelManager.Instance.MarkShown(this);
-            await ShowTween();
-            state = PanelState.Shown;
-            OnPostShow?.Invoke();
+            try
+            {
+                await ShowTween();
+                if (version != operationVersion)
+                {
+                    return;
+                }
+
+                state = PanelState.Shown;
+                OnPostShow?.Invoke();
+            }
+            catch (OperationCanceledException) when (version != operationVersion)
+            {
+                // A newer panel operation owns the final state.
+            }
+            catch
+            {
+                if (version == operationVersion)
+                {
+                    state = PanelState.Hidden;
+                    PanelManager.Instance.MarkHidden(this);
+                    gameObject.SetActive(false);
+                }
+
+                throw;
+            }
         }
 
         public async UniTask Hide()
@@ -71,34 +95,69 @@ namespace Dreamy.UI
             }
 
             state = PanelState.Hiding;
-            ResetToken();
+            int version = ResetToken();
             OnPreHide?.Invoke();
-            await HideTween();
-            PanelManager.Instance.MarkHidden(this);
-            if (CanCache)
+            try
             {
-                gameObject.SetActive(false);
-                state = PanelState.Hidden;
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+                UniTask restorePreviousTask = PanelManager.HasInstance
+                    ? PanelManager.Instance.RestorePreviousPanelVisual(this)
+                    : UniTask.CompletedTask;
+                await UniTask.WhenAll(HideTween(), restorePreviousTask);
+                if (version != operationVersion)
+                {
+                    return;
+                }
 
-            OnPostHide?.Invoke();
+                PanelManager.Instance.MarkHidden(this);
+                PanelManager.Instance.CompletePanelHide(this);
+                state = PanelState.Hidden;
+
+                if (CanCache)
+                {
+                    gameObject.SetActive(false);
+                }
+                else
+                {
+                    Destroy(gameObject);
+                }
+
+                OnPostHide?.Invoke();
+            }
+            catch (OperationCanceledException) when (version != operationVersion)
+            {
+                if (PanelManager.HasInstance)
+                {
+                    PanelManager.Instance.CancelPanelHide(this);
+                }
+            }
+            catch
+            {
+                if (version == operationVersion)
+                {
+                    state = PanelState.Shown;
+                    SetInteractable(true);
+                }
+
+                if (PanelManager.HasInstance)
+                {
+                    PanelManager.Instance.CancelPanelHide(this);
+                }
+
+                throw;
+            }
         }
 
         public UniTask ShowTween()
         {
             return tweenPlayer != null
-                ? tweenPlayer.ShowTween(tokenSource.Token)
+                ? tweenPlayer.ShowTween(tokenSource?.Token ?? CancellationToken.None)
                 : UniTask.CompletedTask;
         }
 
         public UniTask HideTween()
         {
             return tweenPlayer != null
-                ? tweenPlayer.HideTween(tokenSource.Token)
+                ? tweenPlayer.HideTween(tokenSource?.Token ?? CancellationToken.None)
                 : UniTask.CompletedTask;
         }
 
@@ -115,6 +174,7 @@ namespace Dreamy.UI
         {
             tokenSource?.Cancel();
             tokenSource?.Dispose();
+            tweenPlayer?.Kill();
 
             if (PanelManager.HasInstance)
             {
@@ -122,11 +182,13 @@ namespace Dreamy.UI
             }
         }
 
-        private void ResetToken()
+        private int ResetToken()
         {
             tokenSource?.Cancel();
             tokenSource?.Dispose();
             tokenSource = new CancellationTokenSource();
+            operationVersion++;
+            return operationVersion;
         }
 
         private enum PanelState

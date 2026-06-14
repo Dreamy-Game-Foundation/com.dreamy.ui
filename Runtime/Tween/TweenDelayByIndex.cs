@@ -1,11 +1,13 @@
+using Unity.Collections;
 using UnityEngine;
 
 namespace Dreamy.UI
 {
     [DisallowMultipleComponent]
     public sealed class TweenDelayByIndex : MonoBehaviour
+    
     {
-        [SerializeField, Min(0)] private int index;
+        [SerializeField, ReadOnly] private int index;
 
         private UITweenBase[] tweens;
 

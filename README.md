@@ -45,8 +45,8 @@ await PanelManager.Instance.Close<MainMenuPanel>();
 
 Panels can override `Layer` to select `Screen`, `Popup`, or `Overlay`. Add a
 `UILayerRoot` child for each layer under `PanelManager`; the manager discovers
-them automatically. The marker renames its GameObject to match the selected
-layer. Missing roots fall back to the manager transform.
+them automatically. At runtime, missing roots are created as full-stretch
+`RectTransform` objects in Screen, Popup, Overlay order.
 
 Override `CanCache` with `true` to deactivate a hidden panel instead of
 destroying it. A later `Show<TPanel>()` reuses the cached instance.

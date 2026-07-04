@@ -31,6 +31,11 @@ namespace Dreamy.UI
 
         public override UniTask Show()
         {
+            if (this == null || canvasGroup == null)
+            {
+                return UniTask.CompletedTask;
+            }
+
             Tween tween = canvasGroup.DOFade(1f, DurationIn)
                 .SetEase(EaseIn)
                 .SetDelay(DelayIn);
@@ -40,6 +45,11 @@ namespace Dreamy.UI
 
         public override UniTask Hide()
         {
+            if (this == null || canvasGroup == null)
+            {
+                return UniTask.CompletedTask;
+            }
+
             canvasGroup.interactable = false;
             Tween tween = canvasGroup.DOFade(0f, DurationOut)
                 .SetEase(EaseOut)
@@ -50,14 +60,20 @@ namespace Dreamy.UI
 
         protected override void Active()
         {
-            canvasGroup.alpha = 1f;
-            canvasGroup.interactable = true;
+            if (canvasGroup != null)
+            {
+                canvasGroup.alpha = 1f;
+                canvasGroup.interactable = true;
+            }
         }
 
         protected override void Inactive()
         {
-            canvasGroup.alpha = 0f;
-            canvasGroup.interactable = false;
+            if (canvasGroup != null)
+            {
+                canvasGroup.alpha = 0f;
+                canvasGroup.interactable = false;
+            }
         }
     }
 }

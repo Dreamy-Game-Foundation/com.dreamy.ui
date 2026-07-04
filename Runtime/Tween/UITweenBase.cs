@@ -99,23 +99,33 @@ namespace Dreamy.UI
 
         protected UniTask Play(Tween tween, System.Action onComplete)
         {
+            if (tween == null)
+            {
+                return UniTask.CompletedTask;
+            }
+
             currentTween?.Kill();
             currentTween = tween;
 
             UniTaskCompletionSource completionSource = new UniTaskCompletionSource();
             tween.OnComplete(() =>
             {
-                onComplete?.Invoke();
-                currentTween = null;
+                if (this != null)
+                {
+                    onComplete?.Invoke();
+                    currentTween = null;
+                }
                 completionSource.TrySetResult();
             });
             tween.OnKill(() =>
             {
-                if (currentTween == tween)
+                if (this != null)
                 {
-                    currentTween = null;
+                    if (currentTween == tween)
+                    {
+                        currentTween = null;
+                    }
                 }
-
                 completionSource.TrySetResult();
             });
             return completionSource.Task;

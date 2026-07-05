@@ -6,7 +6,7 @@ namespace Dreamy.UI
 {
     public class UIScalable : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler
     {
-        [SerializeField] private float originScale = 1f;
+        [SerializeField] private Vector3 originScale = Vector3.one;
         [SerializeField] private float pressScaleMultiplier = 0.9f;
         [SerializeField] private float releaseScaleMultiplier = 1.15f;
         [SerializeField] private float duration = 0.1f;
@@ -20,7 +20,7 @@ namespace Dreamy.UI
 
         private void Reset()
         {
-            originScale = transform.localScale.x;
+            originScale = transform.localScale;
         }
 
         private void OnEnable()
@@ -49,7 +49,7 @@ namespace Dreamy.UI
         private void OnDisable()
         {
             StopCurrentTween();
-            transform.localScale = Vector3.one * originScale;
+            transform.localScale = originScale;
         }
 
         private void OnDestroy()

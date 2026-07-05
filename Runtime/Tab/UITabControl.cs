@@ -11,6 +11,8 @@ namespace Dreamy.UI
         [SerializeField] private bool autoOpen = true;
         [SerializeField] private int autoOpenTab;
 
+        private int currentTab = -1;
+
         private void Awake()
         {
             if (autoInit)
@@ -49,6 +51,11 @@ namespace Dreamy.UI
                 index = 0;
             }
 
+            if (currentTab == index)
+            {
+                return;
+            }
+
             for (int i = 0; i < tabs.Count; i++)
             {
                 if (i == index)
@@ -60,6 +67,8 @@ namespace Dreamy.UI
                     tabs[i].Hide();
                 }
             }
+
+            currentTab = index;
         }
     }
 }

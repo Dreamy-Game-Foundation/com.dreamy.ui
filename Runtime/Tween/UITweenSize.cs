@@ -21,7 +21,7 @@ namespace Dreamy.UI
             rectTransform = transform as RectTransform;
         }
 
-        protected override UniTask Setup()
+        protected override void Setup()
         {
             if (!rectTransform)
             {
@@ -35,7 +35,6 @@ namespace Dreamy.UI
             }
 
             activeSize = rectTransform.sizeDelta;
-            return UniTask.CompletedTask;
         }
 
         public override UniTask Show()

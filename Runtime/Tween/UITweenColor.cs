@@ -22,7 +22,7 @@ namespace Dreamy.UI
             graphic = GetComponent<Graphic>();
         }
 
-        protected override UniTask Setup()
+        protected override void Setup()
         {
             if (!graphic)
             {
@@ -36,7 +36,6 @@ namespace Dreamy.UI
             }
 
             activeColor = graphic.color;
-            return UniTask.CompletedTask;
         }
 
         public override UniTask Show()

@@ -22,7 +22,7 @@ namespace Dreamy.UI
             rectTransform = transform as RectTransform;
         }
 
-        protected override UniTask Setup()
+        protected override void Setup()
         {
             if (rectTransform == null)
             {
@@ -31,7 +31,6 @@ namespace Dreamy.UI
 
             activePosition = rectTransform.anchoredPosition;
             inactivePosition = activePosition + offset;
-            return UniTask.CompletedTask;
         }
 
         public override UniTask Show()

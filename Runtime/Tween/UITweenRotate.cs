@@ -14,10 +14,9 @@ namespace Dreamy.UI
 
         protected override string DefaultSettingsPath => SettingsPath;
 
-        protected override UniTask Setup()
+        protected override void Setup()
         {
             activeRotation = transform.localEulerAngles;
-            return UniTask.CompletedTask;
         }
 
         public override UniTask Show()

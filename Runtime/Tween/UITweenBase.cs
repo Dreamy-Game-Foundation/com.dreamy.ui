@@ -49,17 +49,18 @@ namespace Dreamy.UI
             settings = Resources.Load<TweenSettings>(DefaultSettingsPath);
         }
 
-        public async UniTask Init()
+        public UniTask Init()
         {
             if (isInitialized)
             {
-                return;
+                return UniTask.CompletedTask;
             }
 
             isInitialized = true;
             LoadDefaultSettings();
-            await Setup();
+            Setup();
             Inactive();
+            return UniTask.CompletedTask;
         }
 
         public abstract UniTask Show();
@@ -84,9 +85,8 @@ namespace Dreamy.UI
             hasDelayOverride = false;
         }
 
-        protected virtual UniTask Setup()
+        protected virtual void Setup()
         {
-            return UniTask.CompletedTask;
         }
 
         private void LoadDefaultSettings()

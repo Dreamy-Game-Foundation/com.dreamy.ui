@@ -19,14 +19,12 @@ namespace Dreamy.UI
             canvasGroup = GetComponent<CanvasGroup>();
         }
 
-        protected override UniTask Setup()
+        protected override void Setup()
         {
             if (!canvasGroup)
             {
                 canvasGroup = GetComponent<CanvasGroup>();
             }
-
-            return UniTask.CompletedTask;
         }
 
         public override UniTask Show()

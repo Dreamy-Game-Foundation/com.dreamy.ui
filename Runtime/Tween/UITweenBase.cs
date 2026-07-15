@@ -24,22 +24,22 @@ namespace Dreamy.UI
         private float delayOutOverride;
 
         public bool IsAutoRun => runType == ETweenRun.Auto;
-        protected Ease EaseIn => overrideEase
+        public Ease EaseIn => overrideEase
             ? easeIn
             : settings ? settings.EaseIn : Ease.OutBack;
-        protected Ease EaseOut => overrideEase
+        public Ease EaseOut => overrideEase
             ? easeOut
             : settings ? settings.EaseOut : Ease.InBack;
-        protected float DurationIn => overrideDuration
+        public float DurationIn => overrideDuration
             ? durationIn
             : settings ? settings.DurationIn : 0.25f;
-        protected float DurationOut => overrideDuration
+        public float DurationOut => overrideDuration
             ? durationOut
             : settings ? settings.DurationOut : 0.2f;
-        protected float DelayIn => hasDelayOverride
+        public float DelayIn => hasDelayOverride
             ? delayInOverride
             : delayIn;
-        protected float DelayOut => hasDelayOverride
+        public float DelayOut => hasDelayOverride
             ? delayOutOverride
             : delayOut;
         protected abstract string DefaultSettingsPath { get; }

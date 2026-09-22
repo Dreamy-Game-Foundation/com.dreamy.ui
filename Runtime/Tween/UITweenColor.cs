@@ -2,6 +2,7 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
+using MissingComponentException = UnityEngine.MissingComponentException;
 
 namespace Dreamy.UI
 {

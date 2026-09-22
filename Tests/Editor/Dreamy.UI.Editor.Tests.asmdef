@@ -1,10 +1,24 @@
 {
-  "name": "Dreamy.UI.Editor.Tests",
-  "references": [
-    "Dreamy.UI.Runtime",
-    "UnityEditor.TestRunner",
-    "UnityEngine.TestRunner"
-  ],
-  "includePlatforms": ["Editor"],
-  "optionalUnityReferences": ["TestAssemblies"]
+    "name": "Dreamy.UI.Editor.Tests",
+    "rootNamespace": "",
+    "references": [
+        "Dreamy.UI.Runtime",
+        "UnityEditor.TestRunner",
+        "UnityEngine.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

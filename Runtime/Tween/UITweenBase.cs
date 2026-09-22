@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Dreamy.UI
 {
-    public abstract class UITweenBase : MonoBehaviour
+    public abstract class UITweenBase : MonoBehaviour, ITween
     {
         [SerializeField] protected ETweenRun runType = ETweenRun.Auto;
         [SerializeField] protected TweenSettings settings;
@@ -30,6 +30,7 @@ namespace Dreamy.UI
         [System.NonSerialized] private TweenSettings inheritedSettings;
 
         public bool IsAutoRun => runType == ETweenRun.Auto;
+        public bool IsEnabled => enabled;
         internal abstract TweenEffectType EffectType { get; }
         public Ease EaseIn => ResolveTiming().EaseIn;
         public Ease EaseOut => ResolveTiming().EaseOut;

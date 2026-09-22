@@ -3,8 +3,10 @@
     "rootNamespace": "",
     "references": [
         "Dreamy.UI.Runtime",
+        "DOTween.Modules",
         "UnityEditor.TestRunner",
-        "UnityEngine.TestRunner"
+        "UnityEngine.TestRunner",
+        "UniTask.DOTween"
     ],
     "includePlatforms": [
         "Editor"

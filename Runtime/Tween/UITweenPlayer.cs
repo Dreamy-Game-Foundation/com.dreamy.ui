@@ -17,12 +17,12 @@ namespace Dreamy.UI
         [SerializeField] private List<TweenTargetGroup> manualTargets =
             new List<TweenTargetGroup>();
 
-        private readonly List<UITweenBase> cachedTweens = new List<UITweenBase>();
+        private readonly List<ITween> cachedTweens = new List<ITween>();
         private bool cacheDirty = true;
         private bool initialized;
 
         public TweenCollectionMode CollectionMode => collectionMode;
-        public IReadOnlyList<UITweenBase> Tweens => cachedTweens;
+        public IReadOnlyList<ITween> Tweens => cachedTweens;
 
         protected virtual void Awake()
         {
@@ -72,15 +72,9 @@ namespace Dreamy.UI
         public void Kill()
         {
             PruneCache();
-            foreach (UITweenBase tween in cachedTweens)
+            foreach (ITween tween in cachedTweens)
             {
                 tween?.Kill();
-            }
-
-            foreach (TweenTargetGroup group in manualTargets)
-            {
-                if (group == null) continue;
-                foreach (TweenEffect effect in group.Effects) effect?.Kill();
             }
         }
 
@@ -96,6 +90,7 @@ namespace Dreamy.UI
                 {
                     if (IsOwnedByThisPlayer(tween) && unique.Add(tween))
                     {
+                        tween.SetInheritedSettings(ResolvePreset(tween.EffectType));
                         cachedTweens.Add(tween);
                     }
                 }
@@ -109,7 +104,7 @@ namespace Dreamy.UI
                         continue;
                     }
 
-                    foreach (TweenEffect effect in group.Effects) effect?.Init(group.Target);
+                    group?.CollectTweens(cachedTweens, this);
                 }
             }
 
@@ -124,7 +119,7 @@ namespace Dreamy.UI
                 List<UniTask> tasks = new List<UniTask>();
                 if (collectionMode == TweenCollectionMode.Auto)
                 {
-                    foreach (UITweenBase tween in cachedTweens)
+                    foreach (ITween tween in cachedTweens)
                     {
                         if (tween != null && tween.IsAutoRun)
                             tasks.Add(show ? tween.Show(token) : tween.Hide(token));
@@ -132,16 +127,10 @@ namespace Dreamy.UI
                 }
                 else
                 {
-                    foreach (TweenTargetGroup group in manualTargets)
+                    foreach (ITween tween in cachedTweens)
                     {
-                        if (group == null || group.Target == null) continue;
-                        foreach (TweenEffect effect in group.Effects)
-                        {
-                            if (effect != null && effect.IsAutoRun)
-                                tasks.Add(show
-                                    ? effect.Show(group.Target, ResolvePreset(effect, group), this)
-                                    : effect.Hide(group.Target, ResolvePreset(effect, group), this));
-                        }
+                        if (tween != null && tween.IsEnabled)
+                            tasks.Add(show ? tween.Show(token) : tween.Hide(token));
                     }
                 }
 
@@ -174,21 +163,14 @@ namespace Dreamy.UI
 
         private void InitializeCachedTweens()
         {
-            for (int index = 0; index < cachedTweens.Count; index++)
-            {
-                UITweenBase tween = cachedTweens[index];
-                if (tween != null)
-                {
-                    tween.SetInheritedSettings(ResolvePreset(tween.EffectType));
-                    tween.Init();
-                }
-            }
+            foreach (ITween tween in cachedTweens) tween?.Init();
         }
 
         private void PruneCache()
         {
-            cachedTweens.RemoveAll(tween => tween == null ||
-                (collectionMode == TweenCollectionMode.Auto && !IsOwnedByThisPlayer(tween)));
+            cachedTweens.RemoveAll(tween => !IsAlive(tween) ||
+                (collectionMode == TweenCollectionMode.Auto && tween is UITweenBase component &&
+                    !IsOwnedByThisPlayer(component)));
         }
 
         private bool IsOwnedByThisPlayer(UITweenBase tween)
@@ -202,10 +184,10 @@ namespace Dreamy.UI
             return nearestPlayer == this;
         }
 
-        private TweenSettings ResolvePreset(TweenEffect effect, TweenTargetGroup group)
+        private static bool IsAlive(ITween tween)
         {
-            if (group.Preset != null) return group.Preset;
-            return ResolvePreset(effect.Type);
+            return tween != null &&
+                (tween is not UnityEngine.Object unityObject || unityObject != null);
         }
 
         private TweenSettings ResolvePreset(TweenEffectType type)

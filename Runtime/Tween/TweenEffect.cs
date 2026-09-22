@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using UnityEngine;
@@ -46,42 +47,58 @@ namespace Dreamy.UI
     }
 
     [Serializable]
-    public abstract class TweenEffect
+    public abstract class UITweenDefinition : ITween
     {
         [SerializeField] private bool enabled = true;
-        [SerializeField] private ETweenRun runType = ETweenRun.Auto;
         [SerializeField] private TweenSettings preset;
         [SerializeField] private TweenTimingOverride timing = new TweenTimingOverride();
 
         [NonSerialized] private TweenPlayback playback;
         [NonSerialized] private Transform initializedTarget;
+        [NonSerialized] private Transform target;
+        [NonSerialized] private TweenSettings inheritedPreset;
+        [NonSerialized] private Component owner;
 
-        public bool IsAutoRun => enabled && runType == ETweenRun.Auto;
+        public bool IsAutoRun => false;
+        public bool IsEnabled => enabled;
         public abstract TweenEffectType Type { get; }
 
-        internal void Init(Transform target)
+        internal void Bind(Transform value, TweenSettings inheritedSettings, Component tweenOwner)
+        {
+            if (target != value)
+            {
+                initializedTarget = null;
+            }
+
+            target = value;
+            inheritedPreset = inheritedSettings;
+            owner = tweenOwner;
+        }
+
+        public UniTask Init()
         {
             if (target == null || initializedTarget == target)
             {
-                return;
+                return UniTask.CompletedTask;
             }
 
             initializedTarget = target;
             CaptureShownState(target);
             ApplyHidden(target);
+            return UniTask.CompletedTask;
         }
 
-        internal UniTask Show(Transform target, TweenSettings inheritedPreset, Component owner)
+        public UniTask Show(CancellationToken token)
         {
-            return Play(target, inheritedPreset, owner, true);
+            return Play(true, token);
         }
 
-        internal UniTask Hide(Transform target, TweenSettings inheritedPreset, Component owner)
+        public UniTask Hide(CancellationToken token)
         {
-            return Play(target, inheritedPreset, owner, false);
+            return Play(false, token);
         }
 
-        internal void Kill()
+        public void Kill()
         {
             playback?.Kill();
         }
@@ -91,18 +108,14 @@ namespace Dreamy.UI
         protected abstract void ApplyShown(Transform target);
         protected abstract void ApplyHidden(Transform target);
 
-        private UniTask Play(
-            Transform target,
-            TweenSettings inheritedPreset,
-            Component owner,
-            bool show)
+        private UniTask Play(bool show, CancellationToken token)
         {
             if (!enabled || target == null || owner == null)
             {
                 return UniTask.CompletedTask;
             }
 
-            Init(target);
+            Init();
             TweenTimingData resolved = timing.Resolve(preset ? preset : inheritedPreset);
             try
             {
@@ -119,7 +132,7 @@ namespace Dreamy.UI
                         if (show) ApplyShown(target);
                         else ApplyHidden(target);
                     },
-                    owner);
+                    owner).AttachExternalCancellation(token);
             }
             catch (MissingReferenceException)
             {
@@ -131,7 +144,7 @@ namespace Dreamy.UI
     }
 
     [Serializable]
-    public sealed class ScaleTweenEffect : TweenEffect
+    public sealed class ScaleTweenEffect : UITweenDefinition
     {
         [SerializeField] private Vector3 shownScale = Vector3.one;
         [SerializeField] private Vector3 hiddenScale = Vector3.zero;
@@ -146,7 +159,7 @@ namespace Dreamy.UI
     }
 
     [Serializable]
-    public sealed class FadeTweenEffect : TweenEffect
+    public sealed class FadeTweenEffect : UITweenDefinition
     {
         [SerializeField, Range(0f, 1f)] private float shownAlpha = 1f;
         [SerializeField, Range(0f, 1f)] private float hiddenAlpha;
@@ -191,7 +204,7 @@ namespace Dreamy.UI
     }
 
     [Serializable]
-    public sealed class MoveTweenEffect : TweenEffect
+    public sealed class MoveTweenEffect : UITweenDefinition
     {
         [SerializeField] private Vector2 hiddenOffset;
         [NonSerialized] private Vector2 shownPosition;
@@ -213,7 +226,7 @@ namespace Dreamy.UI
     }
 
     [Serializable]
-    public sealed class RotateTweenEffect : TweenEffect
+    public sealed class RotateTweenEffect : UITweenDefinition
     {
         [SerializeField] private Vector3 hiddenRotation = new Vector3(0f, 0f, -12f);
         [NonSerialized] private Vector3 shownRotation;
@@ -227,7 +240,7 @@ namespace Dreamy.UI
     }
 
     [Serializable]
-    public sealed class SizeTweenEffect : TweenEffect
+    public sealed class SizeTweenEffect : UITweenDefinition
     {
         [SerializeField] private Vector2 hiddenSize;
         [NonSerialized] private Vector2 shownSize;
@@ -248,7 +261,7 @@ namespace Dreamy.UI
     }
 
     [Serializable]
-    public sealed class ColorTweenEffect : TweenEffect
+    public sealed class ColorTweenEffect : UITweenDefinition
     {
         [SerializeField] private Color hiddenColor = Color.clear;
         [NonSerialized] private Color shownColor = Color.white;

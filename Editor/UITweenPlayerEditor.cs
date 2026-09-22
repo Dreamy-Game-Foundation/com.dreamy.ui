@@ -60,18 +60,18 @@ namespace Dreamy.UI.Editor
             for (int groupIndex = 0; groupIndex < manualTargets.arraySize; groupIndex++)
             {
                 SerializedProperty group = manualTargets.GetArrayElementAtIndex(groupIndex);
-                SerializedProperty effects = group.FindPropertyRelative("effects");
+                SerializedProperty tweens = group.FindPropertyRelative("tweens");
                 if (GUILayout.Button($"Add Effect to Target {groupIndex + 1}"))
                 {
-                    ShowEffectMenu(effects);
+                    ShowTweenMenu(tweens);
                 }
             }
         }
 
-        private void ShowEffectMenu(SerializedProperty effects)
+        private void ShowTweenMenu(SerializedProperty tweens)
         {
             GenericMenu menu = new GenericMenu();
-            Type[] types = TypeCache.GetTypesDerivedFrom<TweenEffect>()
+            Type[] types = TypeCache.GetTypesDerivedFrom<UITweenDefinition>()
                 .Where(type => !type.IsAbstract && type.GetConstructor(Type.EmptyTypes) != null)
                 .OrderBy(type => type.Name)
                 .ToArray();
@@ -81,9 +81,9 @@ namespace Dreamy.UI.Editor
                 menu.AddItem(new GUIContent(ObjectNames.NicifyVariableName(type.Name)), false, () =>
                 {
                     serializedObject.Update();
-                    int index = effects.arraySize;
-                    effects.InsertArrayElementAtIndex(index);
-                    effects.GetArrayElementAtIndex(index).managedReferenceValue =
+                    int index = tweens.arraySize;
+                    tweens.InsertArrayElementAtIndex(index);
+                    tweens.GetArrayElementAtIndex(index).managedReferenceValue =
                         Activator.CreateInstance(type);
                     serializedObject.ApplyModifiedProperties();
                 });

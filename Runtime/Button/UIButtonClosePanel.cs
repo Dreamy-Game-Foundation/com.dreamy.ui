@@ -15,6 +15,11 @@ namespace Dreamy.UI
 
         protected override void OnClick()
         {
+            if (panel == null)
+            {
+                panel = GetComponentInParent<UIPanel>();
+            }
+
             if (panel != null)
             {
                 panel.Hide().Forget();

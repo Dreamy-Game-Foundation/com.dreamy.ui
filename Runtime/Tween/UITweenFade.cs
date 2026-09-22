@@ -7,15 +7,11 @@ namespace Dreamy.UI
     [RequireComponent(typeof(CanvasGroup))]
     public class UITweenFade : UITweenBase
     {
-        private const string SettingsPath = "Tween/FadeTweenSettings";
-
         [SerializeField] private CanvasGroup canvasGroup;
-
-        protected override string DefaultSettingsPath => SettingsPath;
+        internal override TweenEffectType EffectType => TweenEffectType.Fade;
 
         protected override void Reset()
         {
-            base.Reset();
             canvasGroup = GetComponent<CanvasGroup>();
         }
 
@@ -23,60 +19,54 @@ namespace Dreamy.UI
         {
             if (!canvasGroup)
             {
-                canvasGroup = GetComponent<CanvasGroup>();
+                canvasGroup = ResolveTarget(canvasGroup);
             }
         }
 
-        public override UniTask Show()
+        protected override UniTask CreateShowTween()
         {
-            if (this == null || canvasGroup == null)
+            CanvasGroup target = ResolveTarget(canvasGroup);
+            if (this == null || target == null)
             {
                 return UniTask.CompletedTask;
             }
 
-            Tween tween = TweenEffectFactory.Fade(
-                canvasGroup,
-                1f,
-                DurationIn,
-                EaseIn,
-                DelayIn);
+            Tween tween = target.DOFade(1f, DurationIn).SetEase(EaseIn).SetDelay(DelayIn);
 
             return Play(tween, Active);
         }
 
-        public override UniTask Hide()
+        protected override UniTask CreateHideTween()
         {
-            if (this == null || canvasGroup == null)
+            CanvasGroup target = ResolveTarget(canvasGroup);
+            if (this == null || target == null)
             {
                 return UniTask.CompletedTask;
             }
 
-            canvasGroup.interactable = false;
-            Tween tween = TweenEffectFactory.Fade(
-                canvasGroup,
-                0f,
-                DurationOut,
-                EaseOut,
-                DelayOut);
+            target.interactable = false;
+            Tween tween = target.DOFade(0f, DurationOut).SetEase(EaseOut).SetDelay(DelayOut);
 
             return Play(tween, Inactive);
         }
 
         protected override void Active()
         {
-            if (canvasGroup != null)
+            CanvasGroup target = ResolveTarget(canvasGroup);
+            if (target != null)
             {
-                canvasGroup.alpha = 1f;
-                canvasGroup.interactable = true;
+                target.alpha = 1f;
+                target.interactable = true;
             }
         }
 
         protected override void Inactive()
         {
-            if (canvasGroup != null)
+            CanvasGroup target = ResolveTarget(canvasGroup);
+            if (target != null)
             {
-                canvasGroup.alpha = 0f;
-                canvasGroup.interactable = false;
+                target.alpha = 0f;
+                target.interactable = false;
             }
         }
     }

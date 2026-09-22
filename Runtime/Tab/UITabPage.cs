@@ -24,9 +24,15 @@ namespace Dreamy.UI
             gameObject.SetActive(true);
         }
 
-        public virtual void Deactive()
+        public virtual void Deactivate()
         {
             gameObject.SetActive(false);
+        }
+
+        [System.Obsolete("Use Deactivate.")]
+        public void Deactive()
+        {
+            Deactivate();
         }
     }
 }

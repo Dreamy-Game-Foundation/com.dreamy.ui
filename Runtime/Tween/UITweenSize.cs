@@ -6,67 +6,67 @@ namespace Dreamy.UI
 {
     public sealed class UITweenSize : UITweenBase
     {
-        private const string SettingsPath = "Tween/SizeTweenSettings";
-
         [SerializeField] private RectTransform rectTransform;
         [SerializeField] private Vector2 inactiveSize;
 
         private Vector2 activeSize;
-
-        protected override string DefaultSettingsPath => SettingsPath;
+        internal override TweenEffectType EffectType => TweenEffectType.Size;
 
         protected override void Reset()
         {
-            base.Reset();
             rectTransform = transform as RectTransform;
         }
 
         protected override void Setup()
         {
-            if (!rectTransform)
-            {
-                rectTransform = transform as RectTransform;
-            }
-
-            if (!rectTransform)
+            RectTransform target = ResolveTarget(rectTransform);
+            if (target == null)
             {
                 throw new MissingComponentException(
                     $"{nameof(UITweenSize)} requires a RectTransform.");
             }
 
-            activeSize = rectTransform.sizeDelta;
+            activeSize = target.sizeDelta;
         }
 
-        public override UniTask Show()
+        protected override UniTask CreateShowTween()
         {
-            Tween tween = TweenEffectFactory.Size(
-                rectTransform,
-                activeSize,
-                DurationIn,
-                EaseIn,
-                DelayIn);
+            RectTransform target = ResolveTarget(rectTransform);
+            if (target == null)
+            {
+                return UniTask.CompletedTask;
+            }
+            Tween tween = target.DOSizeDelta(activeSize, DurationIn).SetEase(EaseIn).SetDelay(DelayIn);
             return Play(tween, Active);
         }
 
-        public override UniTask Hide()
+        protected override UniTask CreateHideTween()
         {
-            Tween tween = TweenEffectFactory.Size(
-                rectTransform,
-                inactiveSize,
-                DurationOut,
-                EaseOut,
-                DelayOut);
+            RectTransform target = ResolveTarget(rectTransform);
+            if (target == null)
+            {
+                return UniTask.CompletedTask;
+            }
+            Tween tween = target.DOSizeDelta(inactiveSize, DurationOut).SetEase(EaseOut).SetDelay(DelayOut);
             return Play(tween, Inactive);
         }
 
         protected override void Active()
         {
-            rectTransform.sizeDelta = activeSize;
+            RectTransform target = ResolveTarget(rectTransform);
+            if (target != null)
+            {
+                target.sizeDelta = activeSize;
+            }
         }
 
         protected override void Inactive()
         {
-            rectTransform.sizeDelta = inactiveSize;
+            RectTransform target = ResolveTarget(rectTransform);
+            if (target != null)
+            {
+                target.sizeDelta = inactiveSize;
+            }
         }
     }
 }

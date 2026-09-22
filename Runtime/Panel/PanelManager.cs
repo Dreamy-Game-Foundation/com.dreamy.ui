@@ -21,7 +21,14 @@ namespace Dreamy.UI
             new Dictionary<UIPanel, UIPanel>();
         private readonly SemaphoreSlim transitionLock = new SemaphoreSlim(1, 1);
 
-        public UIPanel LastPanel => stackPanels.Count > 0 ? stackPanels[stackPanels.Count - 1] : null;
+        public UIPanel LastPanel
+        {
+            get
+            {
+                PruneDestroyedPanels(stackPanels);
+                return stackPanels.Count > 0 ? stackPanels[stackPanels.Count - 1] : null;
+            }
+        }
 
         public Type LastPanelType => LastPanel != null ? LastPanel.GetType() : null;
 
@@ -155,6 +162,7 @@ namespace Dreamy.UI
 
         public bool TryGet<TPanel>(out TPanel result) where TPanel : UIPanel
         {
+            PruneDestroyedPanels(panels);
             for (int i = panels.Count - 1; i >= 0; i--)
             {
                 UIPanel panel = panels[i];
@@ -257,6 +265,21 @@ namespace Dreamy.UI
             panels.Remove(panel);
             stackPanels.Remove(panel);
             CompletePanelHide(panel);
+            previousPanels.Remove(panel);
+
+            List<UIPanel> orphanedKeys = new List<UIPanel>();
+            foreach (KeyValuePair<UIPanel, UIPanel> pair in previousPanels)
+            {
+                if (pair.Value == panel || pair.Key == null || pair.Value == null)
+                {
+                    orphanedKeys.Add(pair.Key);
+                }
+            }
+
+            foreach (UIPanel key in orphanedKeys)
+            {
+                previousPanels.Remove(key);
+            }
         }
 
         public void MarkShown(UIPanel panel)
@@ -286,6 +309,11 @@ namespace Dreamy.UI
             }
 
             panel.Hide().Forget();
+        }
+
+        private static void PruneDestroyedPanels(List<UIPanel> source)
+        {
+            source.RemoveAll(panel => panel == null);
         }
 
         [ContextMenu("Create Missing Layer Roots")]

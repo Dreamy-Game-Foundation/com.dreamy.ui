@@ -6,49 +6,40 @@ namespace Dreamy.UI
 {
     public sealed class UITweenRotate : UITweenBase
     {
-        private const string SettingsPath = "Tween/RotateTweenSettings";
-
         [SerializeField] private Vector3 inactiveRotation = new(0f, 0f, -12f);
 
         private Vector3 activeRotation;
-
-        protected override string DefaultSettingsPath => SettingsPath;
+        internal override TweenEffectType EffectType => TweenEffectType.Rotate;
 
         protected override void Setup()
         {
-            activeRotation = transform.localEulerAngles;
+            activeRotation = TargetTransform != null ? TargetTransform.localEulerAngles : Vector3.zero;
         }
 
-        public override UniTask Show()
+        protected override UniTask CreateShowTween()
         {
-            Tween tween = TweenEffectFactory.Rotate(
-                transform,
-                activeRotation,
-                DurationIn,
-                EaseIn,
-                DelayIn);
+            Transform target = TargetTransform;
+            if (target == null) return UniTask.CompletedTask;
+            Tween tween = target.DOLocalRotate(activeRotation, DurationIn).SetEase(EaseIn).SetDelay(DelayIn);
             return Play(tween, Active);
         }
 
-        public override UniTask Hide()
+        protected override UniTask CreateHideTween()
         {
-            Tween tween = TweenEffectFactory.Rotate(
-                transform,
-                inactiveRotation,
-                DurationOut,
-                EaseOut,
-                DelayOut);
+            Transform target = TargetTransform;
+            if (target == null) return UniTask.CompletedTask;
+            Tween tween = target.DOLocalRotate(inactiveRotation, DurationOut).SetEase(EaseOut).SetDelay(DelayOut);
             return Play(tween, Inactive);
         }
 
         protected override void Active()
         {
-            transform.localEulerAngles = activeRotation;
+            if (TargetTransform != null) TargetTransform.localEulerAngles = activeRotation;
         }
 
         protected override void Inactive()
         {
-            transform.localEulerAngles = inactiveRotation;
+            if (TargetTransform != null) TargetTransform.localEulerAngles = inactiveRotation;
         }
     }
 }

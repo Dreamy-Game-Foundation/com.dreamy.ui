@@ -6,65 +6,71 @@ namespace Dreamy.UI
 {
     public class UITweenMove : UITweenBase
     {
-        private const string SettingsPath = "Tween/MoveTweenSettings";
-
         [SerializeField] private RectTransform rectTransform;
         [SerializeField] private Vector2 offset;
 
         private Vector2 activePosition;
         private Vector2 inactivePosition;
-
-        protected override string DefaultSettingsPath => SettingsPath;
+        internal override TweenEffectType EffectType => TweenEffectType.Move;
 
         protected override void Reset()
         {
-            base.Reset();
             rectTransform = transform as RectTransform;
         }
 
         protected override void Setup()
         {
-            if (rectTransform == null)
+            RectTransform target = ResolveTarget(rectTransform);
+            if (target == null)
             {
-                rectTransform = transform as RectTransform;
+                throw new MissingComponentException(
+                    $"{nameof(UITweenMove)} requires a RectTransform.");
             }
 
-            activePosition = rectTransform.anchoredPosition;
+            activePosition = target.anchoredPosition;
             inactivePosition = activePosition + offset;
         }
 
-        public override UniTask Show()
+        protected override UniTask CreateShowTween()
         {
-            Tween tween = TweenEffectFactory.Move(
-                rectTransform,
-                activePosition,
-                DurationIn,
-                EaseIn,
-                DelayIn);
+            RectTransform target = ResolveTarget(rectTransform);
+            if (target == null)
+            {
+                return UniTask.CompletedTask;
+            }
+            Tween tween = target.DOAnchorPos(activePosition, DurationIn).SetEase(EaseIn).SetDelay(DelayIn);
 
             return Play(tween, Active);
         }
 
-        public override UniTask Hide()
+        protected override UniTask CreateHideTween()
         {
-            Tween tween = TweenEffectFactory.Move(
-                rectTransform,
-                inactivePosition,
-                DurationOut,
-                EaseOut,
-                DelayOut);
+            RectTransform target = ResolveTarget(rectTransform);
+            if (target == null)
+            {
+                return UniTask.CompletedTask;
+            }
+            Tween tween = target.DOAnchorPos(inactivePosition, DurationOut).SetEase(EaseOut).SetDelay(DelayOut);
 
             return Play(tween, Inactive);
         }
 
         protected override void Active()
         {
-            rectTransform.anchoredPosition = activePosition;
+            RectTransform target = ResolveTarget(rectTransform);
+            if (target != null)
+            {
+                target.anchoredPosition = activePosition;
+            }
         }
 
         protected override void Inactive()
         {
-            rectTransform.anchoredPosition = inactivePosition;
+            RectTransform target = ResolveTarget(rectTransform);
+            if (target != null)
+            {
+                target.anchoredPosition = inactivePosition;
+            }
         }
     }
 }

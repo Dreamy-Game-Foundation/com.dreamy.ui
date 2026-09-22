@@ -12,12 +12,14 @@ namespace Dreamy.UI
         [SerializeField] private int autoOpenTab;
 
         private int currentTab = -1;
+        private bool initialized;
+        private UniTaskCompletionSource initCompletion;
 
         private void Awake()
         {
             if (autoInit)
             {
-                Init().Forget();
+                EnsureInitialized().Forget();
             }
         }
 
@@ -25,21 +27,51 @@ namespace Dreamy.UI
         {
             if (autoOpen)
             {
-                OpenTab(autoOpenTab);
+                OpenWhenInitialized().Forget();
             }
         }
 
-        public async UniTask Init()
+        public UniTask Init()
         {
-            for (int i = 0; i < tabs.Count; i++)
+            return EnsureInitialized();
+        }
+
+        private async UniTask Initialize()
+        {
+            try
             {
-                tabs[i].Register(this, i);
-                await tabs[i].Init();
+                if (initialized)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < tabs.Count; i++)
+                {
+                    if (tabs[i] == null)
+                    {
+                        continue;
+                    }
+
+                    tabs[i].Register(this, i);
+                    await tabs[i].Init();
+                }
+
+                initialized = true;
+                initCompletion.TrySetResult();
+            }
+            catch (System.Exception exception)
+            {
+                initCompletion.TrySetException(exception);
             }
         }
 
         public void OpenTab(int index)
         {
+            if (!initialized)
+            {
+                Debug.LogWarning("UITabControl must be initialized before opening a tab.", this);
+                return;
+            }
             if (tabs.Count == 0)
             {
                 return;
@@ -58,6 +90,11 @@ namespace Dreamy.UI
 
             for (int i = 0; i < tabs.Count; i++)
             {
+                if (tabs[i] == null)
+                {
+                    continue;
+                }
+
                 if (i == index)
                 {
                     tabs[i].Show();
@@ -69,6 +106,32 @@ namespace Dreamy.UI
             }
 
             currentTab = index;
+        }
+
+        private UniTask EnsureInitialized()
+        {
+            if (initialized)
+            {
+                return UniTask.CompletedTask;
+            }
+
+            if (initCompletion != null)
+            {
+                return initCompletion.Task;
+            }
+
+            initCompletion = new UniTaskCompletionSource();
+            Initialize().Forget();
+            return initCompletion.Task;
+        }
+
+        private async UniTaskVoid OpenWhenInitialized()
+        {
+            await EnsureInitialized();
+            if (this != null && isActiveAndEnabled && autoOpen)
+            {
+                OpenTab(autoOpenTab);
+            }
         }
     }
 }

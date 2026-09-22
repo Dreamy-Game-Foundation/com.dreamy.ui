@@ -7,67 +7,67 @@ namespace Dreamy.UI
 {
     public sealed class UITweenColor : UITweenBase
     {
-        private const string SettingsPath = "Tween/ColorTweenSettings";
-
         [SerializeField] private Graphic graphic;
         [SerializeField] private Color inactiveColor = Color.clear;
 
         private Color activeColor;
-
-        protected override string DefaultSettingsPath => SettingsPath;
+        internal override TweenEffectType EffectType => TweenEffectType.Color;
 
         protected override void Reset()
         {
-            base.Reset();
             graphic = GetComponent<Graphic>();
         }
 
         protected override void Setup()
         {
-            if (!graphic)
-            {
-                graphic = GetComponent<Graphic>();
-            }
-
-            if (!graphic)
+            Graphic target = ResolveTarget(graphic);
+            if (target == null)
             {
                 throw new MissingComponentException(
                     $"{nameof(UITweenColor)} requires a Graphic component.");
             }
 
-            activeColor = graphic.color;
+            activeColor = target.color;
         }
 
-        public override UniTask Show()
+        protected override UniTask CreateShowTween()
         {
-            Tween tween = TweenEffectFactory.Color(
-                graphic,
-                activeColor,
-                DurationIn,
-                EaseIn,
-                DelayIn);
+            Graphic target = ResolveTarget(graphic);
+            if (target == null)
+            {
+                return UniTask.CompletedTask;
+            }
+            Tween tween = target.DOColor(activeColor, DurationIn).SetEase(EaseIn).SetDelay(DelayIn);
             return Play(tween, Active);
         }
 
-        public override UniTask Hide()
+        protected override UniTask CreateHideTween()
         {
-            Tween tween = TweenEffectFactory.Color(
-                graphic,
-                inactiveColor,
-                DurationOut,
-                EaseOut,
-                DelayOut);
+            Graphic target = ResolveTarget(graphic);
+            if (target == null)
+            {
+                return UniTask.CompletedTask;
+            }
+            Tween tween = target.DOColor(inactiveColor, DurationOut).SetEase(EaseOut).SetDelay(DelayOut);
             return Play(tween, Inactive);
         }
 
         protected override void Active()
         {
-            graphic.color = activeColor;
+            Graphic target = ResolveTarget(graphic);
+            if (target != null)
+            {
+                target.color = activeColor;
+            }
         }
 
         protected override void Inactive()
         {
-            graphic.color = inactiveColor;
+            Graphic target = ResolveTarget(graphic);
+            if (target != null)
+            {
+                target.color = inactiveColor;
+            }
         }
     }
 }

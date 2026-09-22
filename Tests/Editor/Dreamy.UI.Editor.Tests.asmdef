@@ -1,0 +1,10 @@
+{
+  "name": "Dreamy.UI.Editor.Tests",
+  "references": [
+    "Dreamy.UI.Runtime",
+    "UnityEditor.TestRunner",
+    "UnityEngine.TestRunner"
+  ],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

@@ -18,6 +18,13 @@ namespace Dreamy.UI
             originScale = transform.localScale;
         }
 
+        private void OnValidate()
+        {
+            idleScaleMultiplier = Mathf.Max(0f, idleScaleMultiplier);
+            idleDuration = Mathf.Max(0f, idleDuration);
+            idleDelay = Mathf.Max(0f, idleDelay);
+        }
+
         private void OnEnable()
         {
             PlayIdle();

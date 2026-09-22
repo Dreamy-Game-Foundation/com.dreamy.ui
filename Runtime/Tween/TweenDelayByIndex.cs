@@ -27,7 +27,10 @@ namespace Dreamy.UI
                               Mathf.Max(0f, hideInterval);
             foreach (UITweenBase tween in tweens)
             {
-                tween.SetDelayOverride(showDelay, hideDelay);
+                if (tween != null)
+                {
+                    tween.SetDelayOverride(showDelay, hideDelay);
+                }
             }
         }
 
@@ -36,13 +39,16 @@ namespace Dreamy.UI
             EnsureTweens();
             foreach (UITweenBase tween in tweens)
             {
-                tween.ClearDelayOverride();
+                if (tween != null)
+                {
+                    tween.ClearDelayOverride();
+                }
             }
         }
 
         private void EnsureTweens()
         {
-            if (tweens == null || tweens.Length == 0)
+            if (tweens == null || tweens.Length == 0 || System.Array.Exists(tweens, tween => tween == null))
             {
                 tweens = GetComponents<UITweenBase>();
             }

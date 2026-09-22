@@ -30,7 +30,7 @@ namespace Dreamy.UI
         public void Hide()
         {
             Button?.Deactive();
-            Page?.Deactive();
+            Page?.Deactivate();
         }
     }
 }

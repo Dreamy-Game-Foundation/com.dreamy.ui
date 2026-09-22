@@ -6,45 +6,36 @@ namespace Dreamy.UI
 {
     public class UITweenScale : UITweenBase
     {
-        private const string SettingsPath = "Tween/ScaleTweenSettings";
-
         [SerializeField] private float inactiveScale;
         [SerializeField] private float activeScale = 1f;
+        internal override TweenEffectType EffectType => TweenEffectType.Scale;
 
-        protected override string DefaultSettingsPath => SettingsPath;
-
-        public override UniTask Show()
+        protected override UniTask CreateShowTween()
         {
-            Tween tween = TweenEffectFactory.Scale(
-                transform,
-                Vector3.one * activeScale,
-                DurationIn,
-                EaseIn,
-                DelayIn);
+            Transform target = TargetTransform;
+            if (target == null) return UniTask.CompletedTask;
+            Tween tween = target.DOScale(Vector3.one * activeScale, DurationIn).SetEase(EaseIn).SetDelay(DelayIn);
 
             return Play(tween, Active);
         }
 
-        public override UniTask Hide()
+        protected override UniTask CreateHideTween()
         {
-            Tween tween = TweenEffectFactory.Scale(
-                transform,
-                Vector3.one * inactiveScale,
-                DurationOut,
-                EaseOut,
-                DelayOut);
+            Transform target = TargetTransform;
+            if (target == null) return UniTask.CompletedTask;
+            Tween tween = target.DOScale(Vector3.one * inactiveScale, DurationOut).SetEase(EaseOut).SetDelay(DelayOut);
 
             return Play(tween, Inactive);
         }
 
         protected override void Active()
         {
-            transform.localScale = Vector3.one * activeScale;
+            if (TargetTransform != null) TargetTransform.localScale = Vector3.one * activeScale;
         }
 
         protected override void Inactive()
         {
-            transform.localScale = Vector3.one * inactiveScale;
+            if (TargetTransform != null) TargetTransform.localScale = Vector3.one * inactiveScale;
         }
     }
 }

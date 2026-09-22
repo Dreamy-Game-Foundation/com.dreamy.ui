@@ -25,13 +25,22 @@ namespace Dreamy.UI
             UniTaskCompletionSource completionSource = new UniTaskCompletionSource();
             tween.OnComplete(() =>
             {
-                if (owner != null)
+                try
                 {
-                    onComplete?.Invoke();
-                    currentTween = null;
+                    if (owner != null)
+                    {
+                        onComplete?.Invoke();
+                    }
                 }
+                finally
+                {
+                    if (currentTween == tween)
+                    {
+                        currentTween = null;
+                    }
 
-                completionSource.TrySetResult();
+                    completionSource.TrySetResult();
+                }
             });
             tween.OnKill(() =>
             {

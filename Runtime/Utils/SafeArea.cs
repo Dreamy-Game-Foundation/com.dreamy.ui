@@ -30,6 +30,11 @@ namespace Dreamy.UI
 
         public void Apply()
         {
+            if (Screen.width <= 0 || Screen.height <= 0)
+            {
+                return;
+            }
+
             Rect safeArea = Screen.safeArea;
             lastSafeArea = safeArea;
             lastScreenSize = new Vector2(Screen.width, Screen.height);

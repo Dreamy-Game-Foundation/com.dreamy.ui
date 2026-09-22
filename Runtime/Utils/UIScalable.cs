@@ -18,6 +18,13 @@ namespace Dreamy.UI
             originScale = transform.localScale;
         }
 
+        private void OnValidate()
+        {
+            pressScaleMultiplier = Mathf.Max(0f, pressScaleMultiplier);
+            releaseScaleMultiplier = Mathf.Max(0f, releaseScaleMultiplier);
+            duration = Mathf.Max(0f, duration);
+        }
+
         public void OnPointerDown(PointerEventData eventData)
         {
             StopCurrentTween();
@@ -58,7 +65,10 @@ namespace Dreamy.UI
 
         private void StopCurrentTween()
         {
-            currentTween?.Kill();
+            if (currentTween != null)
+            {
+                currentTween.Kill();
+            }
             currentTween = null;
         }
     }

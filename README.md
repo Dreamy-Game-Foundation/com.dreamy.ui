@@ -59,23 +59,22 @@ await PanelManager.Instance.Transition<ShopPanel>("ui_shop");
 
 ## Tween Transitions
 
-Panels resolve transitions through `IPanelTransition`. Both tween authoring
-flows are supported:
+Panels resolve transitions through `IPanelTransition`. New prefabs use one
+`UITweenPlayer`:
 
-- `TweenPlayer` is the legacy component-based player. Existing prefabs can keep
-  using `UITweenScale`, `UITweenFade`, `UITweenMove`, `UITweenRotate`,
-  `UITweenSize`, `UITweenColor`, `TweenDelayByIndex`, and `TweenDelayControl`.
-- `TweenEffectPlayer` is the entry-based player for new prefabs. It stores a
-  serialized list of `TweenEffectEntry` objects, so a panel can keep all effects
-  on one MonoBehaviour without child tween components.
+- **Auto** (default) collects `UITweenBase` components below the player,
+  including inactive children. Collection stops at a nested `UITweenPlayer`, so
+  a child player always owns its own effects.
+- **Manual** stores `TweenTargetGroup` entries. Every group has one target and
+  a serialized list of effects; no child tween components are required.
 
-`UIPanel` no longer depends on a concrete tween player. It resolves the local
-`IPanelTransition`, then calls `Init`, `ShowTween`, `HideTween`, and `Kill`.
-There is no automatic prefab migration or serialized data rewrite.
+Invalid or destroyed effect targets are
+skipped with a contextual warning; they do not fail the rest of a show/hide
+operation.
 
 ## Tween Settings
 
-Create tween assets from `Assets/Create/Dreamy/UI/Tween Settings`. Each tween
+Create timing preset assets from `Assets/Create/Dreamy/UI/Tween Preset`. Each tween
 loads its own default asset from `Resources/Tween`:
 
 - `MoveTweenSettings.asset`
@@ -94,10 +93,12 @@ lists, add `TweenDelayByIndex` to each animated item and one
 `TweenDelayControl` to their parent. The controller applies show/hide intervals
 in hierarchy order and can reverse the hide order.
 
-`TweenEffectPlayer` entries can reference their own preset, or fall back to the
-player default settings. Each entry can override ease and duration per field
-while keeping delay and target local to the entry. Built-in entries include
-scale, fade, move, rotate, size, color, and punch.
+Create one `TweenPresetLibrary` in
+`Assets/Resources/Dreamy/UI/TweenPresetLibrary.asset`. Every player loads it
+automatically. Manual effects resolve settings in this order: effect preset,
+target-group preset, library preset for that effect type, then code fallback. Ease,
+duration, and delay overrides are independent for show and hide, so an
+un-overridden field keeps following its preset.
 
 `UIScalable` can optionally run a lightweight idle pulse. Pointer press stops
 the idle tween; release completes its feedback animation and resumes idle.

@@ -1,19 +1,23 @@
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using System;
+using System.Threading;
 using UnityEngine;
 
 namespace Dreamy.UI
 {
-    public abstract class UITweenBase : MonoBehaviour, ITween
+    public abstract class UITweenBase : MonoBehaviour
     {
         [SerializeField] protected ETweenRun runType = ETweenRun.Auto;
         [SerializeField] protected TweenSettings settings;
-        [SerializeField] private bool overrideEase;
+        [SerializeField] private bool overrideEaseIn;
         [SerializeField] private Ease easeIn = Ease.OutBack;
         [SerializeField] private Ease easeOut = Ease.InBack;
-        [SerializeField] private bool overrideDuration;
+        [SerializeField] private bool overrideEaseOut;
+        [SerializeField] private bool overrideDurationIn;
         [SerializeField, Min(0f)] private float durationIn = 0.25f;
         [SerializeField, Min(0f)] private float durationOut = 0.2f;
+        [SerializeField] private bool overrideDurationOut;
         [SerializeField, Min(0f)] private float delayIn;
         [SerializeField, Min(0f)] private float delayOut;
 
@@ -22,8 +26,11 @@ namespace Dreamy.UI
         private bool hasDelayOverride;
         private float delayInOverride;
         private float delayOutOverride;
+        private bool initializationFailed;
+        [System.NonSerialized] private TweenSettings inheritedSettings;
 
         public bool IsAutoRun => runType == ETweenRun.Auto;
+        internal abstract TweenEffectType EffectType { get; }
         public Ease EaseIn => ResolveTiming().EaseIn;
         public Ease EaseOut => ResolveTiming().EaseOut;
         public float DurationIn => ResolveTiming().DurationIn;
@@ -34,11 +41,9 @@ namespace Dreamy.UI
         public float DelayOut => hasDelayOverride
             ? delayOutOverride
             : delayOut;
-        protected abstract string DefaultSettingsPath { get; }
 
         protected virtual void Reset()
         {
-            settings = Resources.Load<TweenSettings>(DefaultSettingsPath);
         }
 
         public UniTask Init()
@@ -49,15 +54,32 @@ namespace Dreamy.UI
             }
 
             isInitialized = true;
-            LoadDefaultSettings();
-            Setup();
-            Inactive();
+            try
+            {
+                Setup();
+                Inactive();
+            }
+            catch (Exception exception)
+            {
+                initializationFailed = true;
+                Debug.LogWarning($"{GetType().Name} was skipped because it could not initialize: {exception.Message}", this);
+            }
             return UniTask.CompletedTask;
         }
 
-        public abstract UniTask Show();
+        public UniTask Show(CancellationToken token)
+        {
+            return PlaySafely(true, token);
+        }
 
-        public abstract UniTask Hide();
+        public UniTask Hide(CancellationToken token)
+        {
+            return PlaySafely(false, token);
+        }
+
+        public UniTask Show() => Show(CancellationToken.None);
+
+        public UniTask Hide() => Hide(CancellationToken.None);
 
         public void Kill()
         {
@@ -76,16 +98,20 @@ namespace Dreamy.UI
             hasDelayOverride = false;
         }
 
-        protected virtual void Setup()
+        internal void SetInheritedSettings(TweenSettings value)
         {
+            inheritedSettings = value;
         }
 
-        private void LoadDefaultSettings()
+        protected Transform TargetTransform => transform;
+
+        protected T ResolveTarget<T>(T serializedTarget) where T : Component
         {
-            if (!settings)
-            {
-                settings = Resources.Load<TweenSettings>(DefaultSettingsPath);
-            }
+            return serializedTarget != null ? serializedTarget : GetComponent<T>();
+        }
+
+        protected virtual void Setup()
+        {
         }
 
         protected UniTask Play(Tween tween, System.Action onComplete)
@@ -98,6 +124,38 @@ namespace Dreamy.UI
             return Playback.Play(tween, onComplete, this);
         }
 
+        private async UniTask PlaySafely(bool show, CancellationToken token)
+        {
+            if (this == null || initializationFailed)
+            {
+                return;
+            }
+
+            if (!isInitialized)
+            {
+                Init();
+            }
+
+            try
+            {
+                await (show ? CreateShowTween() : CreateHideTween()).AttachExternalCancellation(token);
+            }
+            catch (OperationCanceledException)
+            {
+                Kill();
+                throw;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"{GetType().Name} was skipped because its target is no longer valid: {exception.Message}", this);
+                Kill();
+            }
+        }
+
+        protected abstract UniTask CreateShowTween();
+
+        protected abstract UniTask CreateHideTween();
+
         protected abstract void Active();
 
         protected abstract void Inactive();
@@ -105,14 +163,14 @@ namespace Dreamy.UI
         private TweenTimingData ResolveTiming()
         {
             return TweenSettingsResolver.Resolve(
-                settings,
-                overrideEase,
+                settings ? settings : inheritedSettings,
+                overrideEaseIn,
                 easeIn,
-                overrideEase,
+                overrideEaseOut,
                 easeOut,
-                overrideDuration,
+                overrideDurationIn,
                 durationIn,
-                overrideDuration,
+                overrideDurationOut,
                 durationOut,
                 DelayIn,
                 DelayOut);

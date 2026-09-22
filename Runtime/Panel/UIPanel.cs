@@ -9,7 +9,7 @@ namespace Dreamy.UI
     public abstract class UIPanel : MonoBehaviour, IPanel
     {
         [SerializeField] protected CanvasGroup canvasGroup;
-        [SerializeField] protected TweenPlayer tweenPlayer;
+        [SerializeField] protected UITweenPlayer tweenPlayer;
         [SerializeField] private MonoBehaviour transitionBehaviour;
 
         private CancellationTokenSource tokenSource;
@@ -30,7 +30,7 @@ namespace Dreamy.UI
         protected virtual void Reset()
         {
             canvasGroup = GetComponent<CanvasGroup>();
-            tweenPlayer = GetComponent<TweenPlayer>();
+            tweenPlayer = GetComponent<UITweenPlayer>();
             transitionBehaviour = GetComponent<IPanelTransition>() as MonoBehaviour;
         }
 
@@ -74,9 +74,17 @@ namespace Dreamy.UI
                 state = PanelState.Shown;
                 OnPostShow?.Invoke();
             }
-            catch (OperationCanceledException) when (version != operationVersion)
+            catch (OperationCanceledException)
             {
-                // A newer panel operation owns the final state.
+                if (version == operationVersion)
+                {
+                    state = PanelState.Hidden;
+                    if (PanelManager.HasInstance)
+                    {
+                        PanelManager.Instance.MarkHidden(this);
+                    }
+                }
+                // A newer panel operation owns the final state otherwise.
             }
             catch
             {
@@ -116,6 +124,8 @@ namespace Dreamy.UI
                 PanelManager.Instance.CompletePanelHide(this);
                 state = PanelState.Hidden;
 
+                OnPostHide?.Invoke();
+
                 if (CanCache)
                 {
                     gameObject.SetActive(false);
@@ -124,14 +134,21 @@ namespace Dreamy.UI
                 {
                     Destroy(gameObject);
                 }
-
-                OnPostHide?.Invoke();
             }
-            catch (OperationCanceledException) when (version != operationVersion)
+            catch (OperationCanceledException)
             {
                 if (PanelManager.HasInstance)
                 {
-                    PanelManager.Instance.CancelPanelHide(this);
+                    if (version == operationVersion)
+                    {
+                        PanelManager.Instance.MarkHidden(this);
+                        PanelManager.Instance.CompletePanelHide(this);
+                        state = PanelState.Hidden;
+                    }
+                    else
+                    {
+                        PanelManager.Instance.CancelPanelHide(this);
+                    }
                 }
             }
             catch
@@ -188,6 +205,14 @@ namespace Dreamy.UI
             }
         }
 
+        protected virtual void OnDisable()
+        {
+            if (state == PanelState.Showing || state == PanelState.Hiding)
+            {
+                tokenSource?.Cancel();
+            }
+        }
+
         private int ResetToken()
         {
             tokenSource?.Cancel();
@@ -210,13 +235,18 @@ namespace Dreamy.UI
                 return panelTransition;
             }
 
-            panelTransition = GetComponent<IPanelTransition>();
+            if (tweenPlayer == null)
+            {
+                tweenPlayer = GetComponent<UITweenPlayer>();
+            }
+
+            panelTransition = tweenPlayer;
             if (panelTransition != null)
             {
                 return panelTransition;
             }
 
-            panelTransition = tweenPlayer;
+            panelTransition = GetComponent<IPanelTransition>();
             return panelTransition;
         }
 

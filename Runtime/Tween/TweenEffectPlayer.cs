@@ -7,35 +7,44 @@ using UnityEngine;
 
 namespace Dreamy.UI
 {
-    public class TweenPlayer : MonoBehaviour, IPanelTransition
+    [DisallowMultipleComponent]
+    public sealed class TweenEffectPlayer : MonoBehaviour, IPanelTransition
     {
-        private List<ITween> uiTweens = new List<ITween>();
+        [SerializeField] private TweenSettings defaultSettings;
+        [SerializeReference] private List<TweenEffectEntry> entries =
+            new List<TweenEffectEntry>();
 
         public UniTask Init()
         {
-            uiTweens = GetComponentsInChildren<ITween>(true).ToList();
-            return UniTask.WhenAll(uiTweens.Select(tween => tween.Init()));
+            return UniTask.WhenAll(
+                entries
+                    .Where(entry => entry != null && entry.Enabled)
+                    .Select(entry => entry.Init(this, defaultSettings)));
         }
 
         public UniTask ShowTween(CancellationToken token)
         {
             return PlayTweens(
-                uiTweens.Where(tween => tween.IsAutoRun).Select(tween => tween.Show()),
+                entries
+                    .Where(entry => entry != null && entry.IsAutoRun)
+                    .Select(entry => entry.Show()),
                 token);
         }
 
         public UniTask HideTween(CancellationToken token)
         {
             return PlayTweens(
-                uiTweens.Where(tween => tween.IsAutoRun).Select(tween => tween.Hide()),
+                entries
+                    .Where(entry => entry != null && entry.IsAutoRun)
+                    .Select(entry => entry.Hide()),
                 token);
         }
 
         public void Kill()
         {
-            foreach (ITween tween in uiTweens)
+            foreach (TweenEffectEntry entry in entries)
             {
-                tween.Kill();
+                entry?.Kill();
             }
         }
 

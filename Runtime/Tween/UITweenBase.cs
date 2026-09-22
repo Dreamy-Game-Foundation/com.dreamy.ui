@@ -18,24 +18,16 @@ namespace Dreamy.UI
         [SerializeField, Min(0f)] private float delayOut;
 
         private bool isInitialized;
-        private Tween currentTween;
+        private TweenPlayback playback;
         private bool hasDelayOverride;
         private float delayInOverride;
         private float delayOutOverride;
 
         public bool IsAutoRun => runType == ETweenRun.Auto;
-        public Ease EaseIn => overrideEase
-            ? easeIn
-            : settings ? settings.EaseIn : Ease.OutBack;
-        public Ease EaseOut => overrideEase
-            ? easeOut
-            : settings ? settings.EaseOut : Ease.InBack;
-        public float DurationIn => overrideDuration
-            ? durationIn
-            : settings ? settings.DurationIn : 0.25f;
-        public float DurationOut => overrideDuration
-            ? durationOut
-            : settings ? settings.DurationOut : 0.2f;
+        public Ease EaseIn => ResolveTiming().EaseIn;
+        public Ease EaseOut => ResolveTiming().EaseOut;
+        public float DurationIn => ResolveTiming().DurationIn;
+        public float DurationOut => ResolveTiming().DurationOut;
         public float DelayIn => hasDelayOverride
             ? delayInOverride
             : delayIn;
@@ -69,8 +61,7 @@ namespace Dreamy.UI
 
         public void Kill()
         {
-            currentTween?.Kill();
-            currentTween = null;
+            Playback.Kill();
         }
 
         public void SetDelayOverride(float showDelay, float hideDelay)
@@ -104,35 +95,40 @@ namespace Dreamy.UI
                 return UniTask.CompletedTask;
             }
 
-            currentTween?.Kill();
-            currentTween = tween;
-
-            UniTaskCompletionSource completionSource = new UniTaskCompletionSource();
-            tween.OnComplete(() =>
-            {
-                if (this != null)
-                {
-                    onComplete?.Invoke();
-                    currentTween = null;
-                }
-                completionSource.TrySetResult();
-            });
-            tween.OnKill(() =>
-            {
-                if (this != null)
-                {
-                    if (currentTween == tween)
-                    {
-                        currentTween = null;
-                    }
-                }
-                completionSource.TrySetResult();
-            });
-            return completionSource.Task;
+            return Playback.Play(tween, onComplete, this);
         }
 
         protected abstract void Active();
 
         protected abstract void Inactive();
+
+        private TweenTimingData ResolveTiming()
+        {
+            return TweenSettingsResolver.Resolve(
+                settings,
+                overrideEase,
+                easeIn,
+                overrideEase,
+                easeOut,
+                overrideDuration,
+                durationIn,
+                overrideDuration,
+                durationOut,
+                DelayIn,
+                DelayOut);
+        }
+
+        private TweenPlayback Playback
+        {
+            get
+            {
+                if (playback == null)
+                {
+                    playback = new TweenPlayback();
+                }
+
+                return playback;
+            }
+        }
     }
 }

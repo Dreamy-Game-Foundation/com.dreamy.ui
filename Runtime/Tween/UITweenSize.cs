@@ -39,17 +39,23 @@ namespace Dreamy.UI
 
         public override UniTask Show()
         {
-            Tween tween = rectTransform.DOSizeDelta(activeSize, DurationIn)
-                .SetEase(EaseIn)
-                .SetDelay(DelayIn);
+            Tween tween = TweenEffectFactory.Size(
+                rectTransform,
+                activeSize,
+                DurationIn,
+                EaseIn,
+                DelayIn);
             return Play(tween, Active);
         }
 
         public override UniTask Hide()
         {
-            Tween tween = rectTransform.DOSizeDelta(inactiveSize, DurationOut)
-                .SetEase(EaseOut)
-                .SetDelay(DelayOut);
+            Tween tween = TweenEffectFactory.Size(
+                rectTransform,
+                inactiveSize,
+                DurationOut,
+                EaseOut,
+                DelayOut);
             return Play(tween, Inactive);
         }
 

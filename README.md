@@ -2,7 +2,7 @@
 
 Reusable UI package for Dreamy internal Unity projects.
 
-The v0.1 API follows the current project `Assets/_BaseSource/Base.UI` flow: `UIPanel` registers with `PanelManager`, panels can be created from Addressables, Android/Escape back closes the latest backable panel, tabs are grouped by button/page, and tween components drive show/hide animation.
+The v0.1 API follows the current project `Assets/_BaseSource/Base.UI` flow: `UIPanel` registers with `PanelManager`, panels can be created from Addressables, Android/Escape back closes the latest backable panel, tabs are grouped by button/page, and tween components or tween effect entries drive show/hide animation.
 
 ## Requirements
 
@@ -57,6 +57,22 @@ Use transition when opening a child panel over the current panel:
 await PanelManager.Instance.Transition<ShopPanel>("ui_shop");
 ```
 
+## Tween Transitions
+
+Panels resolve transitions through `IPanelTransition`. Both tween authoring
+flows are supported:
+
+- `TweenPlayer` is the legacy component-based player. Existing prefabs can keep
+  using `UITweenScale`, `UITweenFade`, `UITweenMove`, `UITweenRotate`,
+  `UITweenSize`, `UITweenColor`, `TweenDelayByIndex`, and `TweenDelayControl`.
+- `TweenEffectPlayer` is the entry-based player for new prefabs. It stores a
+  serialized list of `TweenEffectEntry` objects, so a panel can keep all effects
+  on one MonoBehaviour without child tween components.
+
+`UIPanel` no longer depends on a concrete tween player. It resolves the local
+`IPanelTransition`, then calls `Init`, `ShowTween`, `HideTween`, and `Kill`.
+There is no automatic prefab migration or serialized data rewrite.
+
 ## Tween Settings
 
 Create tween assets from `Assets/Create/Dreamy/UI/Tween Settings`. Each tween
@@ -77,6 +93,11 @@ Each tween can override the shared ease and duration values. For staggered
 lists, add `TweenDelayByIndex` to each animated item and one
 `TweenDelayControl` to their parent. The controller applies show/hide intervals
 in hierarchy order and can reverse the hide order.
+
+`TweenEffectPlayer` entries can reference their own preset, or fall back to the
+player default settings. Each entry can override ease and duration per field
+while keeping delay and target local to the entry. Built-in entries include
+scale, fade, move, rotate, size, color, and punch.
 
 `UIScalable` can optionally run a lightweight idle pulse. Pointer press stops
 the idle tween; release completes its feedback animation and resumes idle.

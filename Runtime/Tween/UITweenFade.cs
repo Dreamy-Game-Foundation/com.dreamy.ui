@@ -34,9 +34,12 @@ namespace Dreamy.UI
                 return UniTask.CompletedTask;
             }
 
-            Tween tween = canvasGroup.DOFade(1f, DurationIn)
-                .SetEase(EaseIn)
-                .SetDelay(DelayIn);
+            Tween tween = TweenEffectFactory.Fade(
+                canvasGroup,
+                1f,
+                DurationIn,
+                EaseIn,
+                DelayIn);
 
             return Play(tween, Active);
         }
@@ -49,9 +52,12 @@ namespace Dreamy.UI
             }
 
             canvasGroup.interactable = false;
-            Tween tween = canvasGroup.DOFade(0f, DurationOut)
-                .SetEase(EaseOut)
-                .SetDelay(DelayOut);
+            Tween tween = TweenEffectFactory.Fade(
+                canvasGroup,
+                0f,
+                DurationOut,
+                EaseOut,
+                DelayOut);
 
             return Play(tween, Inactive);
         }

@@ -40,17 +40,23 @@ namespace Dreamy.UI
 
         public override UniTask Show()
         {
-            Tween tween = graphic.DOColor(activeColor, DurationIn)
-                .SetEase(EaseIn)
-                .SetDelay(DelayIn);
+            Tween tween = TweenEffectFactory.Color(
+                graphic,
+                activeColor,
+                DurationIn,
+                EaseIn,
+                DelayIn);
             return Play(tween, Active);
         }
 
         public override UniTask Hide()
         {
-            Tween tween = graphic.DOColor(inactiveColor, DurationOut)
-                .SetEase(EaseOut)
-                .SetDelay(DelayOut);
+            Tween tween = TweenEffectFactory.Color(
+                graphic,
+                inactiveColor,
+                DurationOut,
+                EaseOut,
+                DelayOut);
             return Play(tween, Inactive);
         }
 

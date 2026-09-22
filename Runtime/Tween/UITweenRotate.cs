@@ -21,17 +21,23 @@ namespace Dreamy.UI
 
         public override UniTask Show()
         {
-            Tween tween = transform.DOLocalRotate(activeRotation, DurationIn)
-                .SetEase(EaseIn)
-                .SetDelay(DelayIn);
+            Tween tween = TweenEffectFactory.Rotate(
+                transform,
+                activeRotation,
+                DurationIn,
+                EaseIn,
+                DelayIn);
             return Play(tween, Active);
         }
 
         public override UniTask Hide()
         {
-            Tween tween = transform.DOLocalRotate(inactiveRotation, DurationOut)
-                .SetEase(EaseOut)
-                .SetDelay(DelayOut);
+            Tween tween = TweenEffectFactory.Rotate(
+                transform,
+                inactiveRotation,
+                DurationOut,
+                EaseOut,
+                DelayOut);
             return Play(tween, Inactive);
         }
 

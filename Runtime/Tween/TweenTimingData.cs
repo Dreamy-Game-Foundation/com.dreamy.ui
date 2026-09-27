@@ -26,5 +26,16 @@ namespace Dreamy.UI
         public float DurationOut { get; }
         public float DelayIn { get; }
         public float DelayOut { get; }
+
+        public TweenTimingData WithDelays(float delayIn, float delayOut)
+        {
+            return new TweenTimingData(
+                EaseIn,
+                EaseOut,
+                DurationIn,
+                DurationOut,
+                delayIn,
+                delayOut);
+        }
     }
 }

@@ -1,0 +1,141 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace Dreamy.UI
+{
+    [ExecuteAlways]
+    [DisallowMultipleComponent]
+    public sealed class UIShineWave : MonoBehaviour
+    {
+        private const string ShaderName = "Dreamy/UI/Shine Wave";
+        private static readonly int ShineColorId = Shader.PropertyToID("_ShineColor");
+        private static readonly int ShinePositionId = Shader.PropertyToID("_ShinePosition");
+        private static readonly int ShineWidthId = Shader.PropertyToID("_ShineWidth");
+        private static readonly int ShineSoftnessId = Shader.PropertyToID("_ShineSoftness");
+
+        [SerializeField] private Graphic target;
+        [SerializeField] private Shader shineShader;
+        [SerializeField] private bool playOnEnable = true;
+        [SerializeField, Min(0f)] private float speed = 0.6f;
+        [SerializeField, Range(0f, 1f)] private float phase;
+        [SerializeField] private Color shineColor = new Color(1f, 1f, 1f, 0.7f);
+        [SerializeField, Range(0.01f, 1f)] private float width = 0.18f;
+        [SerializeField, Range(0.001f, 1f)] private float softness = 0.12f;
+
+        private Material originalMaterial;
+        private Material runtimeMaterial;
+        private bool isPlaying;
+
+        private void Reset()
+        {
+            target = GetComponent<Graphic>();
+            shineShader = Shader.Find(ShaderName);
+        }
+
+        private void OnEnable()
+        {
+            isPlaying = playOnEnable;
+            EnsureMaterial();
+            ApplyProperties();
+        }
+
+        private void OnDisable()
+        {
+            ReleaseMaterial();
+        }
+
+        private void OnDestroy()
+        {
+            ReleaseMaterial();
+        }
+
+        private void OnValidate()
+        {
+            speed = Mathf.Max(0f, speed);
+            phase = Mathf.Repeat(phase, 1f);
+            if (isActiveAndEnabled)
+            {
+                EnsureMaterial();
+                ApplyProperties();
+            }
+        }
+
+        private void Update()
+        {
+            if (!isPlaying || runtimeMaterial == null) return;
+
+            phase = Mathf.Repeat(phase + speed * Time.unscaledDeltaTime, 1f);
+            ApplyProperties();
+        }
+
+        public void Play()
+        {
+            isPlaying = true;
+        }
+
+        public void Stop()
+        {
+            isPlaying = false;
+        }
+
+        public void SetPhase(float value)
+        {
+            phase = Mathf.Repeat(value, 1f);
+            ApplyProperties();
+        }
+
+        private void EnsureMaterial()
+        {
+            if (runtimeMaterial != null) return;
+
+            if (target == null)
+            {
+                target = GetComponent<Graphic>();
+            }
+
+            Shader shader = shineShader != null ? shineShader : Shader.Find(ShaderName);
+            if (target == null || shader == null) return;
+
+            originalMaterial = target.material;
+            runtimeMaterial = new Material(shader)
+            {
+                hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild
+            };
+            runtimeMaterial.mainTexture = target.mainTexture;
+            target.material = runtimeMaterial;
+        }
+
+        private void ApplyProperties()
+        {
+            if (runtimeMaterial == null) return;
+
+            runtimeMaterial.SetColor(ShineColorId, shineColor);
+            runtimeMaterial.SetFloat(ShinePositionId, Mathf.Lerp(-0.5f, 2.5f, phase));
+            runtimeMaterial.SetFloat(ShineWidthId, width);
+            runtimeMaterial.SetFloat(ShineSoftnessId, softness);
+            target?.SetMaterialDirty();
+        }
+
+        private void ReleaseMaterial()
+        {
+            if (runtimeMaterial == null) return;
+
+            if (target != null && target.material == runtimeMaterial)
+            {
+                target.material = originalMaterial;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(runtimeMaterial);
+            }
+            else
+            {
+                DestroyImmediate(runtimeMaterial);
+            }
+
+            runtimeMaterial = null;
+            originalMaterial = null;
+        }
+    }
+}

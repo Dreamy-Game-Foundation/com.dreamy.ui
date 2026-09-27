@@ -79,19 +79,26 @@ Create timing preset assets from `Assets/Create/Dreamy/UI/Tween Preset` and
 assign them by type in `TweenPresetLibrary`. Manual effects receive their
 matching preset as soon as they are created in the Inspector.
 
-Each tween can override the shared ease and duration values. For staggered
-lists, add `TweenDelayByIndex` to each animated item and one
-`TweenDelayControl` to their parent. The controller applies show/hide intervals
-in hierarchy order and can reverse the hide order.
+Each tween can override the shared ease and duration values. Enable `Stagger`
+on a `UITweenPlayer` to apply show/hide intervals in cached order for both
+Auto and Manual mode; hide can use the reverse order. Existing
+`TweenDelayByIndex` and `TweenDelayControl` remain available for component
+lists that need explicit per-item ordering.
 
 Create one `TweenPresetLibrary` in
 `Assets/Resources/Dreamy/UI/TweenPresetLibrary.asset`. Every player loads it
 automatically. Effects resolve settings in this order: effect preset, library
 preset for that effect type, then code fallback. Ease, duration, and delay
 overrides are independent for show and hide, so an un-overridden field keeps
-following its preset. `FadeTweenEffect` and `SlideFadeTweenEffect` add a
-`CanvasGroup` to their target when needed; `PopTweenEffect` provides a built-in
-overshoot transition.
+following its preset. `FadeTweenEffect` adds a `CanvasGroup` to its target when
+needed.
+
+## Progress and shine
+
+`UIProgressBar` renders a normalized value through an `Image` configured as
+Filled and can animate to a new value with DOTween. `UIShineWave` applies the
+included `Dreamy/UI/Shine Wave` shader to a `Graphic` with an isolated runtime
+material, so its wave never changes a shared UI material.
 
 `UIScalable` can optionally run a lightweight idle pulse. Pointer press stops
 the idle tween; release completes its feedback animation and resumes idle.

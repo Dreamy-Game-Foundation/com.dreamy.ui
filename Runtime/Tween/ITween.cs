@@ -12,5 +12,7 @@ namespace Dreamy.UI
         UniTask Show(CancellationToken token);
         UniTask Hide(CancellationToken token);
         void Kill();
+        void SetStaggerDelay(float showDelay, float hideDelay);
+        void ClearStaggerDelay();
     }
 }

@@ -10,6 +10,7 @@ namespace Dreamy.UI
     public sealed class UITweenPlayer : MonoBehaviour
     {
         [SerializeField] private TweenCollectionMode collectionMode = TweenCollectionMode.Auto;
+        [SerializeField] private TweenStaggerSettings stagger = new TweenStaggerSettings();
         [SerializeField] private List<TweenTargetGroup> manualTargets =
             new List<TweenTargetGroup>();
 
@@ -46,31 +47,12 @@ namespace Dreamy.UI
             cacheDirty = true;
         }
 
-        private void Reset()
-        {
-            ApplyDefaultPresets();
-        }
-
-        private void OnValidate()
-        {
-            ApplyDefaultPresets();
-        }
-
         public UniTask Init()
         {
             EnsureCache();
             initialized = true;
             InitializeCachedTweens();
             return UniTask.CompletedTask;
-        }
-
-        private void ApplyDefaultPresets()
-        {
-            TweenPresetLibrary library = TweenPresetLibrary.Load();
-            foreach (TweenTargetGroup target in manualTargets)
-            {
-                target?.ApplyDefaultPresets(library);
-            }
         }
 
         public UniTask ShowTween(CancellationToken token)
@@ -122,6 +104,7 @@ namespace Dreamy.UI
         private async UniTask Play(bool show, CancellationToken token)
         {
             EnsureCache();
+            ApplyStaggerDelays();
             try
             {
                 List<UniTask> tasks = new List<UniTask>();
@@ -186,6 +169,34 @@ namespace Dreamy.UI
         private static TweenSettings ResolvePreset(TweenEffectType type)
         {
             return TweenPresetLibrary.Load()?.Get(type);
+        }
+
+        private void ApplyStaggerDelays()
+        {
+            List<ITween> playableTweens = new List<ITween>();
+            foreach (ITween tween in cachedTweens)
+            {
+                tween.ClearStaggerDelay();
+                if ((collectionMode == TweenCollectionMode.Auto && tween.IsAutoRun) ||
+                    (collectionMode == TweenCollectionMode.Manual && tween.IsEnabled))
+                {
+                    playableTweens.Add(tween);
+                }
+            }
+
+            if (!stagger.IsEnabled)
+            {
+                return;
+            }
+
+            int count = playableTweens.Count;
+            for (int index = 0; index < count; index++)
+            {
+                int hideIndex = stagger.ReverseHideOrder ? count - index - 1 : index;
+                playableTweens[index].SetStaggerDelay(
+                    stagger.GetShowDelay(index),
+                    stagger.GetHideDelay(hideIndex));
+            }
         }
     }
 }

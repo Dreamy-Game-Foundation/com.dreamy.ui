@@ -26,6 +26,8 @@ namespace Dreamy.UI
         private bool hasDelayOverride;
         private float delayInOverride;
         private float delayOutOverride;
+        private float staggerDelayIn;
+        private float staggerDelayOut;
         private bool initializationFailed;
         [System.NonSerialized] private TweenSettings inheritedSettings;
 
@@ -37,11 +39,11 @@ namespace Dreamy.UI
         public float DurationIn => ResolveTiming().DurationIn;
         public float DurationOut => ResolveTiming().DurationOut;
         public float DelayIn => hasDelayOverride
-            ? delayInOverride
-            : delayIn;
+            ? delayInOverride + staggerDelayIn
+            : delayIn + staggerDelayIn;
         public float DelayOut => hasDelayOverride
-            ? delayOutOverride
-            : delayOut;
+            ? delayOutOverride + staggerDelayOut
+            : delayOut + staggerDelayOut;
 
         protected virtual void Reset()
         {
@@ -98,6 +100,18 @@ namespace Dreamy.UI
         public void ClearDelayOverride()
         {
             hasDelayOverride = false;
+        }
+
+        public void SetStaggerDelay(float showDelay, float hideDelay)
+        {
+            staggerDelayIn = Mathf.Max(0f, showDelay);
+            staggerDelayOut = Mathf.Max(0f, hideDelay);
+        }
+
+        public void ClearStaggerDelay()
+        {
+            staggerDelayIn = 0f;
+            staggerDelayOut = 0f;
         }
 
         internal void SetInheritedSettings(TweenSettings value)

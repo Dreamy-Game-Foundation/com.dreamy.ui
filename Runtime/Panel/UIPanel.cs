@@ -10,12 +10,10 @@ namespace Dreamy.UI
     {
         [SerializeField] protected CanvasGroup canvasGroup;
         [SerializeField] protected UITweenPlayer tweenPlayer;
-        [SerializeField] private MonoBehaviour transitionBehaviour;
 
         private CancellationTokenSource tokenSource;
         private PanelState state = PanelState.Hidden;
         private int operationVersion;
-        private IPanelTransition panelTransition;
 
         public abstract bool CanBack { get; }
         public virtual UILayer Layer => UILayer.Screen;
@@ -31,7 +29,6 @@ namespace Dreamy.UI
         {
             canvasGroup = GetComponent<CanvasGroup>();
             tweenPlayer = GetComponent<UITweenPlayer>();
-            transitionBehaviour = GetComponent<IPanelTransition>() as MonoBehaviour;
         }
 
         public virtual UniTask Init()
@@ -44,7 +41,7 @@ namespace Dreamy.UI
         {
             gameObject.SetActive(false);
 
-            IPanelTransition transition = ResolvePanelTransition();
+            UITweenPlayer transition = ResolveTweenPlayer();
             if (transition != null)
             {
                 await transition.Init();
@@ -170,7 +167,7 @@ namespace Dreamy.UI
 
         public UniTask ShowTween()
         {
-            IPanelTransition transition = ResolvePanelTransition();
+            UITweenPlayer transition = ResolveTweenPlayer();
             return transition != null
                 ? transition.ShowTween(tokenSource?.Token ?? CancellationToken.None)
                 : UniTask.CompletedTask;
@@ -178,7 +175,7 @@ namespace Dreamy.UI
 
         public UniTask HideTween()
         {
-            IPanelTransition transition = ResolvePanelTransition();
+            UITweenPlayer transition = ResolveTweenPlayer();
             return transition != null
                 ? transition.HideTween(tokenSource?.Token ?? CancellationToken.None)
                 : UniTask.CompletedTask;
@@ -197,7 +194,7 @@ namespace Dreamy.UI
         {
             tokenSource?.Cancel();
             tokenSource?.Dispose();
-            ResolvePanelTransition()?.Kill();
+            ResolveTweenPlayer()?.Kill();
 
             if (PanelManager.HasInstance)
             {
@@ -222,32 +219,14 @@ namespace Dreamy.UI
             return operationVersion;
         }
 
-        private IPanelTransition ResolvePanelTransition()
+        private UITweenPlayer ResolveTweenPlayer()
         {
-            if (panelTransition != null)
-            {
-                return panelTransition;
-            }
-
-            if (transitionBehaviour is IPanelTransition assignedTransition)
-            {
-                panelTransition = assignedTransition;
-                return panelTransition;
-            }
-
             if (tweenPlayer == null)
             {
                 tweenPlayer = GetComponent<UITweenPlayer>();
             }
 
-            panelTransition = tweenPlayer;
-            if (panelTransition != null)
-            {
-                return panelTransition;
-            }
-
-            panelTransition = GetComponent<IPanelTransition>();
-            return panelTransition;
+            return tweenPlayer;
         }
 
         private enum PanelState

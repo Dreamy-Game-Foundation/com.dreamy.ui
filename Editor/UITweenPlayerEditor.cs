@@ -34,9 +34,7 @@ namespace Dreamy.UI.Editor
             TweenCollectionMode mode = (TweenCollectionMode)collectionMode.enumValueIndex;
             if (mode == TweenCollectionMode.Manual)
             {
-                EditorGUILayout.PropertyField(manualTargets, true);
-                DrawAddEffectControls();
-                DrawApplyPresetButton();
+                DrawManualTargets();
             }
             else
             {
@@ -56,16 +54,41 @@ namespace Dreamy.UI.Editor
             }
         }
 
-        private void DrawAddEffectControls()
+        private void DrawManualTargets()
         {
             for (int groupIndex = 0; groupIndex < manualTargets.arraySize; groupIndex++)
             {
                 SerializedProperty group = manualTargets.GetArrayElementAtIndex(groupIndex);
+                SerializedProperty target = group.FindPropertyRelative("target");
                 SerializedProperty tweens = group.FindPropertyRelative("tweens");
-                if (GUILayout.Button($"+ Add Tween to Target {groupIndex + 1}"))
+
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.PropertyField(target, GUIContent.none);
+                if (GUILayout.Button(EditorGUIUtility.IconContent("Toolbar Plus"), GUILayout.Width(28f)))
                 {
                     ShowTweenMenu(tweens);
                 }
+                if (GUILayout.Button(EditorGUIUtility.IconContent("Toolbar Minus"), GUILayout.Width(28f)))
+                {
+                    manualTargets.DeleteArrayElementAtIndex(groupIndex);
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.EndVertical();
+                    break;
+                }
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.PropertyField(tweens, new GUIContent("Tweens"), true);
+                EditorGUILayout.EndVertical();
+            }
+
+            if (GUILayout.Button("Add Target"))
+            {
+                int index = manualTargets.arraySize;
+                manualTargets.InsertArrayElementAtIndex(index);
+                SerializedProperty group = manualTargets.GetArrayElementAtIndex(index);
+                group.FindPropertyRelative("target").objectReferenceValue = null;
+                group.FindPropertyRelative("tweens").ClearArray();
             }
         }
 
@@ -92,19 +115,6 @@ namespace Dreamy.UI.Editor
             }
 
             menu.ShowAsContext();
-        }
-
-        private void DrawApplyPresetButton()
-        {
-            if (!GUILayout.Button("Apply Missing Default Presets")) return;
-
-            UITweenPlayer player = (UITweenPlayer)target;
-            Undo.RecordObject(player, "Apply Tween Presets");
-            serializedObject.ApplyModifiedProperties();
-            if (player.ApplyMissingDefaultPresets())
-            {
-                EditorUtility.SetDirty(player);
-            }
         }
 
         private static void CreatePresetLibrary()

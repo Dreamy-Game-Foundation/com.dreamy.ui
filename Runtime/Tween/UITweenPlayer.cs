@@ -6,12 +6,8 @@ using UnityEngine;
 
 namespace Dreamy.UI
 {
-    /// <summary>
-    /// Owns UI transitions. Auto collection stops at nested players; Manual mode
-    /// stores serializable effects grouped by their target.
-    /// </summary>
     [DisallowMultipleComponent]
-    public class UITweenPlayer : MonoBehaviour, IPanelTransition
+    public sealed class UITweenPlayer : MonoBehaviour
     {
         [SerializeField] private TweenCollectionMode collectionMode = TweenCollectionMode.Auto;
         [SerializeField] private List<TweenTargetGroup> manualTargets =
@@ -24,52 +20,30 @@ namespace Dreamy.UI
         public TweenCollectionMode CollectionMode => collectionMode;
         public IReadOnlyList<ITween> Tweens => cachedTweens;
 
-        protected virtual void Awake()
+        private void Awake()
         {
             RebuildCache();
         }
 
-        protected virtual void OnEnable()
+        private void OnEnable()
         {
             cacheDirty = true;
         }
 
-        protected virtual void OnDisable()
+        private void OnDisable()
         {
             Kill();
         }
 
-        protected virtual void OnDestroy()
+        private void OnDestroy()
         {
             Kill();
             cachedTweens.Clear();
         }
 
-        protected virtual void OnTransformChildrenChanged()
+        private void OnTransformChildrenChanged()
         {
             cacheDirty = true;
-        }
-
-        protected virtual void OnValidate()
-        {
-            ApplyMissingDefaultPresets();
-        }
-
-        public bool ApplyMissingDefaultPresets()
-        {
-            if (collectionMode != TweenCollectionMode.Manual) return false;
-
-            TweenPresetLibrary library = TweenPresetLibrary.Load();
-            bool changed = false;
-            foreach (TweenTargetGroup group in manualTargets)
-            {
-                if (group != null)
-                {
-                    changed |= group.ApplyMissingPresets(library);
-                }
-            }
-
-            return changed;
         }
 
         public UniTask Init()
@@ -77,7 +51,6 @@ namespace Dreamy.UI
             EnsureCache();
             initialized = true;
             InitializeCachedTweens();
-
             return UniTask.CompletedTask;
         }
 
@@ -96,7 +69,7 @@ namespace Dreamy.UI
             PruneCache();
             foreach (ITween tween in cachedTweens)
             {
-                tween?.Kill();
+                tween.Kill();
             }
         }
 
@@ -121,11 +94,6 @@ namespace Dreamy.UI
             {
                 foreach (TweenTargetGroup group in manualTargets)
                 {
-                    if (group == null || group.Target == null)
-                    {
-                        continue;
-                    }
-
                     group?.CollectTweens(cachedTweens, this);
                 }
             }
@@ -139,21 +107,12 @@ namespace Dreamy.UI
             try
             {
                 List<UniTask> tasks = new List<UniTask>();
-                if (collectionMode == TweenCollectionMode.Auto)
+                foreach (ITween tween in cachedTweens)
                 {
-                    foreach (ITween tween in cachedTweens)
-                    {
-                        if (tween != null && tween.IsAutoRun)
-                            tasks.Add(show ? tween.Show(token) : tween.Hide(token));
-                    }
-                }
-                else
-                {
-                    foreach (ITween tween in cachedTweens)
-                    {
-                        if (tween != null && tween.IsEnabled)
-                            tasks.Add(show ? tween.Show(token) : tween.Hide(token));
-                    }
+                    if (collectionMode == TweenCollectionMode.Auto && !tween.IsAutoRun) continue;
+                    if (collectionMode == TweenCollectionMode.Manual && !tween.IsEnabled) continue;
+
+                    tasks.Add(show ? tween.Show(token) : tween.Hide(token));
                 }
 
                 await UniTask.WhenAll(tasks).AttachExternalCancellation(token);
@@ -185,34 +144,28 @@ namespace Dreamy.UI
 
         private void InitializeCachedTweens()
         {
-            foreach (ITween tween in cachedTweens) tween?.Init();
+            foreach (ITween tween in cachedTweens)
+            {
+                tween.Init();
+            }
         }
 
         private void PruneCache()
         {
-            cachedTweens.RemoveAll(tween => !IsAlive(tween) ||
+            cachedTweens.RemoveAll(tween => tween == null ||
+                (tween is UnityEngine.Object unityObject && unityObject == null) ||
                 (collectionMode == TweenCollectionMode.Auto && tween is UITweenBase component &&
                     !IsOwnedByThisPlayer(component)));
         }
 
         private bool IsOwnedByThisPlayer(UITweenBase tween)
         {
-            if (tween == null)
-            {
-                return false;
-            }
+            if (tween == null) return false;
 
-            UITweenPlayer nearestPlayer = tween.GetComponentInParent<UITweenPlayer>(true);
-            return nearestPlayer == this;
+            return tween.GetComponentInParent<UITweenPlayer>(true) == this;
         }
 
-        private static bool IsAlive(ITween tween)
-        {
-            return tween != null &&
-                (tween is not UnityEngine.Object unityObject || unityObject != null);
-        }
-
-        private TweenSettings ResolvePreset(TweenEffectType type)
+        private static TweenSettings ResolvePreset(TweenEffectType type)
         {
             return TweenPresetLibrary.Load()?.Get(type);
         }

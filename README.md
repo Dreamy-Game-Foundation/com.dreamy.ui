@@ -59,14 +59,15 @@ await PanelManager.Instance.Transition<ShopPanel>("ui_shop");
 
 ## Tween Transitions
 
-Panels resolve transitions through `IPanelTransition`. New prefabs use one
-`UITweenPlayer`:
+Panels use one `UITweenPlayer` directly:
 
 - **Auto** (default) collects `UITweenBase` components below the player,
   including inactive children. Collection stops at a nested `UITweenPlayer`, so
   a child player always owns its own effects.
 - **Manual** stores `TweenTargetGroup` entries. Every group has one target and
-  a serialized list of effects; no child tween components are required.
+  a serialized list of effects; no child tween components are required. The
+  Inspector presents each target as a card with a contextual `+` menu for
+  adding an effect.
 
 Invalid or destroyed effect targets are
 skipped with a contextual warning; they do not fail the rest of a show/hide
@@ -74,19 +75,9 @@ operation.
 
 ## Tween Settings
 
-Create timing preset assets from `Assets/Create/Dreamy/UI/Tween Preset`. Each tween
-loads its own default asset from `Resources/Tween`:
-
-- `MoveTweenSettings.asset`
-- `ScaleTweenSettings.asset`
-- `FadeTweenSettings.asset`
-- `RotateTweenSettings.asset`
-- `SizeTweenSettings.asset`
-- `ColorTweenSettings.asset`
-
-Tween components load their default asset from `Reset()` and retry during
-initialization when the reference is missing. Show/hide delays remain on each
-component so sequences can be staggered directly in the Inspector.
+Create timing preset assets from `Assets/Create/Dreamy/UI/Tween Preset` and
+assign them by type in `TweenPresetLibrary`. Manual effects receive their
+matching preset as soon as they are created in the Inspector.
 
 Each tween can override the shared ease and duration values. For staggered
 lists, add `TweenDelayByIndex` to each animated item and one
@@ -95,10 +86,12 @@ in hierarchy order and can reverse the hide order.
 
 Create one `TweenPresetLibrary` in
 `Assets/Resources/Dreamy/UI/TweenPresetLibrary.asset`. Every player loads it
-automatically. Manual effects resolve settings in this order: effect preset,
-target-group preset, library preset for that effect type, then code fallback. Ease,
-duration, and delay overrides are independent for show and hide, so an
-un-overridden field keeps following its preset.
+automatically. Effects resolve settings in this order: effect preset, library
+preset for that effect type, then code fallback. Ease, duration, and delay
+overrides are independent for show and hide, so an un-overridden field keeps
+following its preset. `FadeTweenEffect` and `SlideFadeTweenEffect` add a
+`CanvasGroup` to their target when needed; `PopTweenEffect` provides a built-in
+overshoot transition.
 
 `UIScalable` can optionally run a lightweight idle pulse. Pointer press stops
 the idle tween; release completes its feedback animation and resumes idle.

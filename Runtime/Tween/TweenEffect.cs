@@ -14,7 +14,9 @@ namespace Dreamy.UI
         Move,
         Rotate,
         Size,
-        Color
+        Color,
+        Pop,
+        SlideFade
     }
 
     [Serializable]
@@ -178,13 +180,12 @@ namespace Dreamy.UI
         public override TweenEffectType Type => TweenEffectType.Fade;
         protected override void CaptureShownState(Transform target)
         {
-            CanvasGroup group = target.GetComponent<CanvasGroup>();
-            if (group != null) shownAlpha = group.alpha;
+            CanvasGroup group = GetOrAddCanvasGroup(target);
+            shownAlpha = group.alpha;
         }
         protected override Tween CreateTween(Transform target, bool show, TweenTimingData timing)
         {
-            CanvasGroup group = target.GetComponent<CanvasGroup>();
-            if (group == null) return null;
+            CanvasGroup group = GetOrAddCanvasGroup(target);
             if (!show && controlInteractable) group.interactable = false;
             return group.DOFade(show ? shownAlpha : hiddenAlpha, show ? timing.DurationIn : timing.DurationOut)
                 .SetEase(show ? timing.EaseIn : timing.EaseOut)
@@ -192,8 +193,7 @@ namespace Dreamy.UI
         }
         protected override void ApplyShown(Transform target)
         {
-            CanvasGroup group = target.GetComponent<CanvasGroup>();
-            if (group == null) return;
+            CanvasGroup group = GetOrAddCanvasGroup(target);
             group.alpha = shownAlpha;
             if (controlInteractable)
             {
@@ -203,14 +203,130 @@ namespace Dreamy.UI
         }
         protected override void ApplyHidden(Transform target)
         {
-            CanvasGroup group = target.GetComponent<CanvasGroup>();
-            if (group == null) return;
+            CanvasGroup group = GetOrAddCanvasGroup(target);
             group.alpha = hiddenAlpha;
             if (controlInteractable)
             {
                 group.interactable = false;
                 group.blocksRaycasts = false;
             }
+        }
+
+        private static CanvasGroup GetOrAddCanvasGroup(Component target)
+        {
+            CanvasGroup group = target.GetComponent<CanvasGroup>();
+            return group != null ? group : target.gameObject.AddComponent<CanvasGroup>();
+        }
+    }
+
+    [Serializable]
+    public sealed class PopTweenEffect : UITweenDefinition
+    {
+        [SerializeField] private Vector3 hiddenScale = Vector3.zero;
+        [SerializeField, Min(1f)] private float overshootMultiplier = 1.1f;
+        [NonSerialized] private Vector3 shownScale;
+
+        public override TweenEffectType Type => TweenEffectType.Pop;
+
+        protected override void CaptureShownState(Transform target)
+        {
+            shownScale = target.localScale;
+        }
+
+        protected override Tween CreateTween(Transform target, bool show, TweenTimingData timing)
+        {
+            float duration = show ? timing.DurationIn : timing.DurationOut;
+            if (!show)
+            {
+                return target.DOScale(hiddenScale, duration)
+                    .SetEase(timing.EaseOut)
+                    .SetDelay(timing.DelayOut);
+            }
+
+            float firstDuration = duration * 0.7f;
+            float secondDuration = duration - firstDuration;
+            Sequence sequence = DOTween.Sequence();
+            sequence.Append(target.DOScale(shownScale * overshootMultiplier, firstDuration)
+                .SetEase(timing.EaseIn));
+            sequence.Append(target.DOScale(shownScale, secondDuration)
+                .SetEase(Ease.OutQuad));
+            return sequence.SetDelay(timing.DelayIn);
+        }
+
+        protected override void ApplyShown(Transform target)
+        {
+            target.localScale = shownScale;
+        }
+
+        protected override void ApplyHidden(Transform target)
+        {
+            target.localScale = hiddenScale;
+        }
+    }
+
+    [Serializable]
+    public sealed class SlideFadeTweenEffect : UITweenDefinition
+    {
+        [SerializeField] private Vector2 hiddenOffset;
+        [NonSerialized] private Vector2 shownPosition;
+        [NonSerialized] private float shownAlpha;
+
+        public override TweenEffectType Type => TweenEffectType.SlideFade;
+
+        protected override void CaptureShownState(Transform target)
+        {
+            if (target is RectTransform rect)
+            {
+                shownPosition = rect.anchoredPosition;
+            }
+
+            shownAlpha = GetOrAddCanvasGroup(target).alpha;
+        }
+
+        protected override Tween CreateTween(Transform target, bool show, TweenTimingData timing)
+        {
+            RectTransform rect = target as RectTransform;
+            if (rect == null) return null;
+
+            CanvasGroup group = GetOrAddCanvasGroup(target);
+            float duration = show ? timing.DurationIn : timing.DurationOut;
+            Sequence sequence = DOTween.Sequence();
+            sequence.Join(rect.DOAnchorPos(show ? shownPosition : shownPosition + hiddenOffset, duration));
+            sequence.Join(group.DOFade(show ? shownAlpha : 0f, duration));
+            return sequence.SetEase(show ? timing.EaseIn : timing.EaseOut)
+                .SetDelay(show ? timing.DelayIn : timing.DelayOut);
+        }
+
+        protected override void ApplyShown(Transform target)
+        {
+            if (target is RectTransform rect)
+            {
+                rect.anchoredPosition = shownPosition;
+            }
+
+            CanvasGroup group = GetOrAddCanvasGroup(target);
+            group.alpha = shownAlpha;
+            group.interactable = true;
+            group.blocksRaycasts = true;
+        }
+
+        protected override void ApplyHidden(Transform target)
+        {
+            if (target is RectTransform rect)
+            {
+                rect.anchoredPosition = shownPosition + hiddenOffset;
+            }
+
+            CanvasGroup group = GetOrAddCanvasGroup(target);
+            group.alpha = 0f;
+            group.interactable = false;
+            group.blocksRaycasts = false;
+        }
+
+        private static CanvasGroup GetOrAddCanvasGroup(Component target)
+        {
+            CanvasGroup group = target.GetComponent<CanvasGroup>();
+            return group != null ? group : target.gameObject.AddComponent<CanvasGroup>();
         }
     }
 

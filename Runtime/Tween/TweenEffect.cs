@@ -63,6 +63,17 @@ namespace Dreamy.UI
         public bool IsEnabled => enabled;
         public abstract TweenEffectType Type { get; }
 
+        public bool ApplyPresetIfMissing(TweenSettings value)
+        {
+            if (preset != null || value == null)
+            {
+                return false;
+            }
+
+            preset = value;
+            return true;
+        }
+
         internal void Bind(Transform value, TweenSettings inheritedSettings, Component tweenOwner)
         {
             if (target != value)

@@ -50,6 +50,28 @@ namespace Dreamy.UI
             cacheDirty = true;
         }
 
+        protected virtual void OnValidate()
+        {
+            ApplyMissingDefaultPresets();
+        }
+
+        public bool ApplyMissingDefaultPresets()
+        {
+            if (collectionMode != TweenCollectionMode.Manual) return false;
+
+            TweenPresetLibrary library = TweenPresetLibrary.Load();
+            bool changed = false;
+            foreach (TweenTargetGroup group in manualTargets)
+            {
+                if (group != null)
+                {
+                    changed |= group.ApplyMissingPresets(library);
+                }
+            }
+
+            return changed;
+        }
+
         public UniTask Init()
         {
             EnsureCache();

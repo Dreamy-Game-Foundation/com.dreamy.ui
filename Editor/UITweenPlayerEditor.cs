@@ -36,6 +36,7 @@ namespace Dreamy.UI.Editor
             {
                 EditorGUILayout.PropertyField(manualTargets, true);
                 DrawAddEffectControls();
+                DrawApplyPresetButton();
             }
             else
             {
@@ -61,7 +62,7 @@ namespace Dreamy.UI.Editor
             {
                 SerializedProperty group = manualTargets.GetArrayElementAtIndex(groupIndex);
                 SerializedProperty tweens = group.FindPropertyRelative("tweens");
-                if (GUILayout.Button($"Add Effect to Target {groupIndex + 1}"))
+                if (GUILayout.Button($"+ Add Tween to Target {groupIndex + 1}"))
                 {
                     ShowTweenMenu(tweens);
                 }
@@ -83,13 +84,27 @@ namespace Dreamy.UI.Editor
                     serializedObject.Update();
                     int index = tweens.arraySize;
                     tweens.InsertArrayElementAtIndex(index);
-                    tweens.GetArrayElementAtIndex(index).managedReferenceValue =
-                        Activator.CreateInstance(type);
+                    UITweenDefinition tween = (UITweenDefinition)Activator.CreateInstance(type);
+                    tween.ApplyPresetIfMissing(TweenPresetLibrary.Load()?.Get(tween.Type));
+                    tweens.GetArrayElementAtIndex(index).managedReferenceValue = tween;
                     serializedObject.ApplyModifiedProperties();
                 });
             }
 
             menu.ShowAsContext();
+        }
+
+        private void DrawApplyPresetButton()
+        {
+            if (!GUILayout.Button("Apply Missing Default Presets")) return;
+
+            UITweenPlayer player = (UITweenPlayer)target;
+            Undo.RecordObject(player, "Apply Tween Presets");
+            serializedObject.ApplyModifiedProperties();
+            if (player.ApplyMissingDefaultPresets())
+            {
+                EditorUtility.SetDirty(player);
+            }
         }
 
         private static void CreatePresetLibrary()

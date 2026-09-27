@@ -45,13 +45,6 @@ namespace Dreamy.UI.Editor
 
             serializedObject.ApplyModifiedProperties();
 
-            UITweenPlayer player = (UITweenPlayer)target;
-            if (GUILayout.Button("Rebuild Tween Cache"))
-            {
-                Undo.RecordObject(player, "Rebuild Tween Cache");
-                player.RebuildCache();
-                EditorUtility.SetDirty(player);
-            }
         }
 
         private void DrawManualTargets()

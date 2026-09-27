@@ -69,9 +69,9 @@ namespace Dreamy.UI.Tests.Editor
                     .GetArrayElementAtIndex(0)
                     .FindPropertyRelative("tweens")
                     .GetArrayElementAtIndex(0);
-                tween.FindPropertyRelative("timing")
+                tween.FindPropertyRelative("overrideSettings")
                     .FindPropertyRelative("overrideDurationIn").boolValue = true;
-                tween.FindPropertyRelative("timing")
+                tween.FindPropertyRelative("overrideSettings")
                     .FindPropertyRelative("durationIn").floatValue = 0f;
                 serializedTween.ApplyModifiedPropertiesWithoutUndo();
 

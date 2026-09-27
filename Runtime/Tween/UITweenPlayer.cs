@@ -46,12 +46,31 @@ namespace Dreamy.UI
             cacheDirty = true;
         }
 
+        private void Reset()
+        {
+            ApplyDefaultPresets();
+        }
+
+        private void OnValidate()
+        {
+            ApplyDefaultPresets();
+        }
+
         public UniTask Init()
         {
             EnsureCache();
             initialized = true;
             InitializeCachedTweens();
             return UniTask.CompletedTask;
+        }
+
+        private void ApplyDefaultPresets()
+        {
+            TweenPresetLibrary library = TweenPresetLibrary.Load();
+            foreach (TweenTargetGroup target in manualTargets)
+            {
+                target?.ApplyDefaultPresets(library);
+            }
         }
 
         public UniTask ShowTween(CancellationToken token)
@@ -73,7 +92,6 @@ namespace Dreamy.UI
             }
         }
 
-        [ContextMenu("Rebuild Tween Cache")]
         public void RebuildCache()
         {
             cachedTweens.Clear();

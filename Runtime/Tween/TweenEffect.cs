@@ -3,7 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.Serialization;
 
 namespace Dreamy.UI
 {
@@ -13,14 +13,11 @@ namespace Dreamy.UI
         Fade,
         Move,
         Rotate,
-        Size,
-        Color,
-        Pop,
-        SlideFade
+        Size
     }
 
     [Serializable]
-    public sealed class TweenTimingOverride
+    public sealed class TweenOverrideSettings
     {
         [SerializeField] private bool overrideEaseIn;
         [SerializeField] private Ease easeIn = Ease.OutBack;
@@ -52,8 +49,9 @@ namespace Dreamy.UI
     public abstract class UITweenDefinition : ITween
     {
         [SerializeField] private bool enabled = true;
-        [SerializeField] private TweenSettings preset;
-        [SerializeField] private TweenTimingOverride timing = new TweenTimingOverride();
+        [SerializeField] private TweenSettings settings;
+        [FormerlySerializedAs("timing")]
+        [SerializeField] private TweenOverrideSettings overrideSettings = new TweenOverrideSettings();
 
         [NonSerialized] private TweenPlayback playback;
         [NonSerialized] private Transform initializedTarget;
@@ -67,12 +65,12 @@ namespace Dreamy.UI
 
         public bool ApplyPresetIfMissing(TweenSettings value)
         {
-            if (preset != null || value == null)
+            if (settings != null || value == null)
             {
                 return false;
             }
 
-            preset = value;
+            settings = value;
             return true;
         }
 
@@ -129,7 +127,7 @@ namespace Dreamy.UI
             }
 
             Init();
-            TweenTimingData resolved = timing.Resolve(preset ? preset : inheritedPreset);
+            TweenTimingData resolved = overrideSettings.Resolve(settings ? settings : inheritedPreset);
             try
             {
                 Tween tween = CreateTween(target, show, resolved);
@@ -220,117 +218,6 @@ namespace Dreamy.UI
     }
 
     [Serializable]
-    public sealed class PopTweenEffect : UITweenDefinition
-    {
-        [SerializeField] private Vector3 hiddenScale = Vector3.zero;
-        [SerializeField, Min(1f)] private float overshootMultiplier = 1.1f;
-        [NonSerialized] private Vector3 shownScale;
-
-        public override TweenEffectType Type => TweenEffectType.Pop;
-
-        protected override void CaptureShownState(Transform target)
-        {
-            shownScale = target.localScale;
-        }
-
-        protected override Tween CreateTween(Transform target, bool show, TweenTimingData timing)
-        {
-            float duration = show ? timing.DurationIn : timing.DurationOut;
-            if (!show)
-            {
-                return target.DOScale(hiddenScale, duration)
-                    .SetEase(timing.EaseOut)
-                    .SetDelay(timing.DelayOut);
-            }
-
-            float firstDuration = duration * 0.7f;
-            float secondDuration = duration - firstDuration;
-            Sequence sequence = DOTween.Sequence();
-            sequence.Append(target.DOScale(shownScale * overshootMultiplier, firstDuration)
-                .SetEase(timing.EaseIn));
-            sequence.Append(target.DOScale(shownScale, secondDuration)
-                .SetEase(Ease.OutQuad));
-            return sequence.SetDelay(timing.DelayIn);
-        }
-
-        protected override void ApplyShown(Transform target)
-        {
-            target.localScale = shownScale;
-        }
-
-        protected override void ApplyHidden(Transform target)
-        {
-            target.localScale = hiddenScale;
-        }
-    }
-
-    [Serializable]
-    public sealed class SlideFadeTweenEffect : UITweenDefinition
-    {
-        [SerializeField] private Vector2 hiddenOffset;
-        [NonSerialized] private Vector2 shownPosition;
-        [NonSerialized] private float shownAlpha;
-
-        public override TweenEffectType Type => TweenEffectType.SlideFade;
-
-        protected override void CaptureShownState(Transform target)
-        {
-            if (target is RectTransform rect)
-            {
-                shownPosition = rect.anchoredPosition;
-            }
-
-            shownAlpha = GetOrAddCanvasGroup(target).alpha;
-        }
-
-        protected override Tween CreateTween(Transform target, bool show, TweenTimingData timing)
-        {
-            RectTransform rect = target as RectTransform;
-            if (rect == null) return null;
-
-            CanvasGroup group = GetOrAddCanvasGroup(target);
-            float duration = show ? timing.DurationIn : timing.DurationOut;
-            Sequence sequence = DOTween.Sequence();
-            sequence.Join(rect.DOAnchorPos(show ? shownPosition : shownPosition + hiddenOffset, duration));
-            sequence.Join(group.DOFade(show ? shownAlpha : 0f, duration));
-            return sequence.SetEase(show ? timing.EaseIn : timing.EaseOut)
-                .SetDelay(show ? timing.DelayIn : timing.DelayOut);
-        }
-
-        protected override void ApplyShown(Transform target)
-        {
-            if (target is RectTransform rect)
-            {
-                rect.anchoredPosition = shownPosition;
-            }
-
-            CanvasGroup group = GetOrAddCanvasGroup(target);
-            group.alpha = shownAlpha;
-            group.interactable = true;
-            group.blocksRaycasts = true;
-        }
-
-        protected override void ApplyHidden(Transform target)
-        {
-            if (target is RectTransform rect)
-            {
-                rect.anchoredPosition = shownPosition + hiddenOffset;
-            }
-
-            CanvasGroup group = GetOrAddCanvasGroup(target);
-            group.alpha = 0f;
-            group.interactable = false;
-            group.blocksRaycasts = false;
-        }
-
-        private static CanvasGroup GetOrAddCanvasGroup(Component target)
-        {
-            CanvasGroup group = target.GetComponent<CanvasGroup>();
-            return group != null ? group : target.gameObject.AddComponent<CanvasGroup>();
-        }
-    }
-
-    [Serializable]
     public sealed class MoveTweenEffect : UITweenDefinition
     {
         [SerializeField] private Vector2 hiddenOffset;
@@ -387,25 +274,4 @@ namespace Dreamy.UI
         protected override void ApplyHidden(Transform target) { if (target is RectTransform rect) rect.sizeDelta = hiddenSize; }
     }
 
-    [Serializable]
-    public sealed class ColorTweenEffect : UITweenDefinition
-    {
-        [SerializeField] private Color hiddenColor = Color.clear;
-        [NonSerialized] private Color shownColor = Color.white;
-        public override TweenEffectType Type => TweenEffectType.Color;
-        protected override void CaptureShownState(Transform target)
-        {
-            Graphic graphic = target.GetComponent<Graphic>();
-            if (graphic != null) shownColor = graphic.color;
-        }
-        protected override Tween CreateTween(Transform target, bool show, TweenTimingData timing)
-        {
-            Graphic graphic = target.GetComponent<Graphic>();
-            return graphic == null ? null : graphic.DOColor(show ? shownColor : hiddenColor,
-                    show ? timing.DurationIn : timing.DurationOut)
-                .SetEase(show ? timing.EaseIn : timing.EaseOut).SetDelay(show ? timing.DelayIn : timing.DelayOut);
-        }
-        protected override void ApplyShown(Transform target) { Graphic graphic = target.GetComponent<Graphic>(); if (graphic != null) graphic.color = shownColor; }
-        protected override void ApplyHidden(Transform target) { Graphic graphic = target.GetComponent<Graphic>(); if (graphic != null) graphic.color = hiddenColor; }
-    }
 }

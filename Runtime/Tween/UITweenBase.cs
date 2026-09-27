@@ -45,6 +45,7 @@ namespace Dreamy.UI
 
         protected virtual void Reset()
         {
+            settings = TweenPresetLibrary.Load()?.Get(EffectType);
         }
 
         public UniTask Init()

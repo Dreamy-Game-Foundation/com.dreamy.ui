@@ -98,7 +98,10 @@ needed.
 `UIProgressBar` renders a normalized value through an `Image` configured as
 Filled and can animate to a new value with DOTween. `UIShineWave` applies the
 included `Dreamy/UI/Shine Wave` shader to a `Graphic` with an isolated runtime
-material, so its wave never changes a shared UI material.
+material, so its wave never changes a shared UI material. Set `Rotation` per
+wave to orient its streak. Add one `UIShineWaveController` to the parent of
+multiple waves to trigger idle waves with randomized interval, duration, and
+rotation.
 
 `UIScalable` can optionally run a lightweight idle pulse. Pointer press stops
 the idle tween; release completes its feedback animation and resumes idle.

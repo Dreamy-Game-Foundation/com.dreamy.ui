@@ -6,6 +6,7 @@ Shader "Dreamy/UI/Shine Wave"
         _Color ("Tint", Color) = (1,1,1,1)
         _ShineColor ("Shine Color", Color) = (1,1,1,0.7)
         _ShinePosition ("Shine Position", Float) = 0
+        _ShineDirection ("Shine Direction", Vector) = (0.707, 0.707, 0, 0)
         _ShineWidth ("Shine Width", Range(0.01, 1)) = 0.18
         _ShineSoftness ("Shine Softness", Range(0.001, 1)) = 0.12
         _StencilComp ("Stencil Comparison", Float) = 8
@@ -70,6 +71,7 @@ Shader "Dreamy/UI/Shine Wave"
             float4 _ClipRect;
             fixed4 _ShineColor;
             float _ShinePosition;
+            float2 _ShineDirection;
             float _ShineWidth;
             float _ShineSoftness;
 
@@ -88,9 +90,9 @@ Shader "Dreamy/UI/Shine Wave"
             fixed4 frag(v2f i) : SV_Target
             {
                 fixed4 color = (tex2D(_MainTex, i.texcoord) + _TextureSampleAdd) * i.color;
-                float diagonal = i.texcoord.x + i.texcoord.y;
-                float leading = smoothstep(_ShinePosition - _ShineWidth - _ShineSoftness, _ShinePosition - _ShineWidth, diagonal);
-                float trailing = smoothstep(_ShinePosition + _ShineWidth, _ShinePosition + _ShineWidth + _ShineSoftness, diagonal);
+                float linePosition = dot(i.texcoord - 0.5, normalize(_ShineDirection));
+                float leading = smoothstep(_ShinePosition - _ShineWidth - _ShineSoftness, _ShinePosition - _ShineWidth, linePosition);
+                float trailing = smoothstep(_ShinePosition + _ShineWidth, _ShinePosition + _ShineWidth + _ShineSoftness, linePosition);
                 color.rgb += _ShineColor.rgb * _ShineColor.a * saturate(leading - trailing) * color.a;
 
                 #ifdef UNITY_UI_CLIP_RECT

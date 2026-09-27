@@ -9,11 +9,13 @@ namespace Dreamy.UI.Editor
     public sealed class UITweenPlayerEditor : UnityEditor.Editor
     {
         private SerializedProperty collectionMode;
+        private SerializedProperty stagger;
         private SerializedProperty manualTargets;
 
         private void OnEnable()
         {
             collectionMode = serializedObject.FindProperty("collectionMode");
+            stagger = serializedObject.FindProperty("stagger");
             manualTargets = serializedObject.FindProperty("manualTargets");
         }
 
@@ -21,6 +23,7 @@ namespace Dreamy.UI.Editor
         {
             serializedObject.Update();
             EditorGUILayout.PropertyField(collectionMode);
+            EditorGUILayout.PropertyField(stagger, true);
             EditorGUILayout.HelpBox(
                 "Default presets are loaded automatically from Resources/Dreamy/UI/TweenPresetLibrary.",
                 MessageType.Info);

@@ -15,6 +15,7 @@ namespace Dreamy.UI
             new List<TweenTargetGroup>();
 
         private readonly List<ITween> cachedTweens = new List<ITween>();
+        private readonly List<ITween> playableTweens = new List<ITween>();
         private bool cacheDirty = true;
         private bool initialized;
 
@@ -173,10 +174,14 @@ namespace Dreamy.UI
 
         private void ApplyStaggerDelays()
         {
-            List<ITween> playableTweens = new List<ITween>();
+            playableTweens.Clear();
             foreach (ITween tween in cachedTweens)
             {
-                tween.ClearStaggerDelay();
+                if (tween is IStaggerableTween staggerableTween)
+                {
+                    staggerableTween.ClearStaggerDelay();
+                }
+
                 if ((collectionMode == TweenCollectionMode.Auto && tween.IsAutoRun) ||
                     (collectionMode == TweenCollectionMode.Manual && tween.IsEnabled))
                 {
@@ -193,9 +198,12 @@ namespace Dreamy.UI
             for (int index = 0; index < count; index++)
             {
                 int hideIndex = stagger.ReverseHideOrder ? count - index - 1 : index;
-                playableTweens[index].SetStaggerDelay(
-                    stagger.GetShowDelay(index),
-                    stagger.GetHideDelay(hideIndex));
+                if (playableTweens[index] is IStaggerableTween staggerableTween)
+                {
+                    staggerableTween.SetStaggerDelay(
+                        stagger.GetShowDelay(index),
+                        stagger.GetHideDelay(hideIndex));
+                }
             }
         }
     }

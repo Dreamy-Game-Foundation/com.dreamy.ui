@@ -13,6 +13,7 @@ namespace Dreamy.UI
         private static readonly int ShineWidthId = Shader.PropertyToID("_ShineWidth");
         private static readonly int ShineSoftnessId = Shader.PropertyToID("_ShineSoftness");
         private static readonly int ShineDirectionId = Shader.PropertyToID("_ShineDirection");
+        private static readonly int ShineAspectId = Shader.PropertyToID("_ShineAspect");
 
         [SerializeField] private Graphic target;
         [SerializeField] private Shader shineShader;
@@ -29,6 +30,7 @@ namespace Dreamy.UI
         private bool isPlaying;
         private bool isOneShot;
         private float oneShotSpeed;
+        private IShineWaveRegistry registry;
 
         public bool IsPlaying => isPlaying;
 
@@ -40,13 +42,26 @@ namespace Dreamy.UI
 
         private void OnEnable()
         {
-            isPlaying = playOnEnable;
+            registry = FindRegistry();
+            if (registry != null)
+            {
+                registry.Register(this);
+                isPlaying = false;
+                phase = 1f;
+            }
+            else
+            {
+                isPlaying = playOnEnable;
+            }
+
             EnsureMaterial();
             ApplyProperties();
         }
 
         private void OnDisable()
         {
+            registry?.Unregister(this);
+            registry = null;
             ReleaseMaterial();
         }
 
@@ -64,6 +79,11 @@ namespace Dreamy.UI
                 EnsureMaterial();
                 ApplyProperties();
             }
+        }
+
+        private void OnRectTransformDimensionsChange()
+        {
+            ApplyProperties();
         }
 
         private void Update()
@@ -148,8 +168,11 @@ namespace Dreamy.UI
         {
             if (runtimeMaterial == null) return;
 
+            float aspect = GetAspectRatio();
+            float sweepExtent = Mathf.Sqrt(aspect * aspect + 1f) * 0.5f + width + softness;
             runtimeMaterial.SetColor(ShineColorId, shineColor);
-            runtimeMaterial.SetFloat(ShinePositionId, Mathf.Lerp(-1.3f, 1.3f, phase));
+            runtimeMaterial.SetFloat(ShinePositionId, Mathf.Lerp(-sweepExtent, sweepExtent, phase));
+            runtimeMaterial.SetFloat(ShineAspectId, aspect);
             runtimeMaterial.SetFloat(ShineWidthId, width);
             runtimeMaterial.SetFloat(ShineSoftnessId, softness);
             float radians = rotation * Mathf.Deg2Rad;
@@ -157,6 +180,27 @@ namespace Dreamy.UI
                 ShineDirectionId,
                 new Vector4(Mathf.Cos(radians), Mathf.Sin(radians), 0f, 0f));
             target?.SetMaterialDirty();
+        }
+
+        private IShineWaveRegistry FindRegistry()
+        {
+            foreach (MonoBehaviour behaviour in GetComponentsInParent<MonoBehaviour>(true))
+            {
+                if (behaviour is IShineWaveRegistry value)
+                {
+                    return value;
+                }
+            }
+
+            return null;
+        }
+
+        private float GetAspectRatio()
+        {
+            RectTransform rect = target != null ? target.rectTransform : null;
+            if (rect == null || Mathf.Approximately(rect.rect.height, 0f)) return 1f;
+
+            return Mathf.Max(0.01f, rect.rect.width / rect.rect.height);
         }
 
         private void ReleaseMaterial()

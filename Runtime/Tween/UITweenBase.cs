@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Dreamy.UI
 {
-    public abstract class UITweenBase : MonoBehaviour, ITween
+    public abstract class UITweenBase : MonoBehaviour, ITween, IStaggerableTween
     {
         [SerializeField] protected ETweenRun runType = ETweenRun.Auto;
         [SerializeField] protected TweenSettings settings;

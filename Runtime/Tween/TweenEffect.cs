@@ -46,7 +46,7 @@ namespace Dreamy.UI
     }
 
     [Serializable]
-    public abstract class UITweenDefinition : ITween
+    public abstract class UITweenDefinition : ITween, IStaggerableTween
     {
         [SerializeField] private bool enabled = true;
         [SerializeField] private TweenSettings settings;

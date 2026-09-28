@@ -101,7 +101,10 @@ included `Dreamy/UI/Shine Wave` shader to a `Graphic` with an isolated runtime
 material, so its wave never changes a shared UI material. Set `Rotation` per
 wave to orient its streak. Add one `UIShineWaveController` to the parent of
 multiple waves to trigger idle waves with randomized interval, duration, and
-rotation.
+rotation. Waves register and unregister themselves as item prefabs spawn or
+despawn below that parent. Configure several `Wave Patterns`; every pattern
+defines its burst size, delay between streaks, cooldown, duration, and rotation
+range, and the controller chooses one pattern per burst.
 
 `UIScalable` can optionally run a lightweight idle pulse. Pointer press stops
 the idle tween; release completes its feedback animation and resumes idle.

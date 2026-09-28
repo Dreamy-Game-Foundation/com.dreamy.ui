@@ -163,6 +163,11 @@ namespace Dreamy.UI
             {
                 hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild
             };
+            if (originalMaterial != null)
+            {
+                runtimeMaterial.CopyPropertiesFromMaterial(originalMaterial);
+            }
+
             SynchronizeGraphicTexture();
             target.material = runtimeMaterial;
         }

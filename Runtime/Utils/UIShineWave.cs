@@ -14,6 +14,7 @@ namespace Dreamy.UI
         private static readonly int ShineSoftnessId = Shader.PropertyToID("_ShineSoftness");
         private static readonly int ShineDirectionId = Shader.PropertyToID("_ShineDirection");
         private static readonly int ShineAspectId = Shader.PropertyToID("_ShineAspect");
+        private static readonly int ShineUvRectId = Shader.PropertyToID("_ShineUvRect");
 
         [SerializeField] private Graphic target;
         [SerializeField] private Shader shineShader;
@@ -31,6 +32,8 @@ namespace Dreamy.UI
         private bool isOneShot;
         private float oneShotSpeed;
         private IShineWaveRegistry registry;
+        private Sprite cachedSprite;
+        private Vector4 spriteUvRect = new Vector4(0f, 0f, 1f, 1f);
 
         public bool IsPlaying => isPlaying;
 
@@ -160,7 +163,7 @@ namespace Dreamy.UI
             {
                 hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild
             };
-            runtimeMaterial.mainTexture = target.mainTexture;
+            SynchronizeGraphicTexture();
             target.material = runtimeMaterial;
         }
 
@@ -170,9 +173,11 @@ namespace Dreamy.UI
 
             float aspect = GetAspectRatio();
             float sweepExtent = Mathf.Sqrt(aspect * aspect + 1f) * 0.5f + width + softness;
+            SynchronizeGraphicTexture();
             runtimeMaterial.SetColor(ShineColorId, shineColor);
             runtimeMaterial.SetFloat(ShinePositionId, Mathf.Lerp(-sweepExtent, sweepExtent, phase));
             runtimeMaterial.SetFloat(ShineAspectId, aspect);
+            runtimeMaterial.SetVector(ShineUvRectId, spriteUvRect);
             runtimeMaterial.SetFloat(ShineWidthId, width);
             runtimeMaterial.SetFloat(ShineSoftnessId, softness);
             float radians = rotation * Mathf.Deg2Rad;
@@ -201,6 +206,48 @@ namespace Dreamy.UI
             if (rect == null || Mathf.Approximately(rect.rect.height, 0f)) return 1f;
 
             return Mathf.Max(0.01f, rect.rect.width / rect.rect.height);
+        }
+
+        private void SynchronizeGraphicTexture()
+        {
+            if (target == null || runtimeMaterial == null) return;
+
+            Texture texture = target.mainTexture;
+            if (runtimeMaterial.mainTexture != texture)
+            {
+                runtimeMaterial.mainTexture = texture;
+            }
+
+            Image image = target as Image;
+            Sprite sprite = image != null
+                ? image.overrideSprite != null ? image.overrideSprite : image.sprite
+                : null;
+            if (cachedSprite == sprite) return;
+
+            cachedSprite = sprite;
+            spriteUvRect = GetUvRect(sprite);
+        }
+
+        private static Vector4 GetUvRect(Sprite sprite)
+        {
+            if (sprite == null) return new Vector4(0f, 0f, 1f, 1f);
+
+            Vector2[] uv = sprite.uv;
+            if (uv == null || uv.Length == 0) return new Vector4(0f, 0f, 1f, 1f);
+
+            Vector2 min = uv[0];
+            Vector2 max = uv[0];
+            foreach (Vector2 point in uv)
+            {
+                min = Vector2.Min(min, point);
+                max = Vector2.Max(max, point);
+            }
+
+            return new Vector4(
+                min.x,
+                min.y,
+                Mathf.Max(0.0001f, max.x - min.x),
+                Mathf.Max(0.0001f, max.y - min.y));
         }
 
         private void ReleaseMaterial()

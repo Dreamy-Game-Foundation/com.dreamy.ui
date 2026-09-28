@@ -8,6 +8,7 @@ Shader "Dreamy/UI/Shine Wave"
         _ShinePosition ("Shine Position", Float) = 0
         _ShineDirection ("Shine Direction", Vector) = (0.707, 0.707, 0, 0)
         _ShineAspect ("Shine Aspect", Float) = 1
+        _ShineUvRect ("Shine UV Rect", Vector) = (0, 0, 1, 1)
         _ShineWidth ("Shine Width", Range(0.01, 1)) = 0.18
         _ShineSoftness ("Shine Softness", Range(0.001, 1)) = 0.12
         _StencilComp ("Stencil Comparison", Float) = 8
@@ -74,6 +75,7 @@ Shader "Dreamy/UI/Shine Wave"
             float _ShinePosition;
             float2 _ShineDirection;
             float _ShineAspect;
+            float4 _ShineUvRect;
             float _ShineWidth;
             float _ShineSoftness;
 
@@ -92,7 +94,8 @@ Shader "Dreamy/UI/Shine Wave"
             fixed4 frag(v2f i) : SV_Target
             {
                 fixed4 color = (tex2D(_MainTex, i.texcoord) + _TextureSampleAdd) * i.color;
-                float2 aspectAwareUv = (i.texcoord - 0.5) * float2(_ShineAspect, 1.0);
+                float2 localUv = (i.texcoord - _ShineUvRect.xy) / _ShineUvRect.zw;
+                float2 aspectAwareUv = (localUv - 0.5) * float2(_ShineAspect, 1.0);
                 float linePosition = dot(aspectAwareUv, normalize(_ShineDirection));
                 float leading = smoothstep(_ShinePosition - _ShineWidth - _ShineSoftness, _ShinePosition - _ShineWidth, linePosition);
                 float trailing = smoothstep(_ShinePosition + _ShineWidth, _ShinePosition + _ShineWidth + _ShineSoftness, linePosition);

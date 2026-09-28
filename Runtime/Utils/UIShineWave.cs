@@ -179,17 +179,37 @@ namespace Dreamy.UI
             float aspect = GetAspectRatio();
             float sweepExtent = Mathf.Sqrt(aspect * aspect + 1f) * 0.5f + width + softness;
             SynchronizeGraphicTexture();
-            runtimeMaterial.SetColor(ShineColorId, shineColor);
-            runtimeMaterial.SetFloat(ShinePositionId, Mathf.Lerp(-sweepExtent, sweepExtent, phase));
-            runtimeMaterial.SetFloat(ShineAspectId, aspect);
-            runtimeMaterial.SetVector(ShineUvRectId, spriteUvRect);
-            runtimeMaterial.SetFloat(ShineWidthId, width);
-            runtimeMaterial.SetFloat(ShineSoftnessId, softness);
             float radians = rotation * Mathf.Deg2Rad;
-            runtimeMaterial.SetVector(
-                ShineDirectionId,
-                new Vector4(Mathf.Cos(radians), Mathf.Sin(radians), 0f, 0f));
-            target?.SetMaterialDirty();
+            Vector4 direction = new Vector4(
+                Mathf.Cos(radians),
+                Mathf.Sin(radians),
+                0f,
+                0f);
+            float position = Mathf.Lerp(-sweepExtent, sweepExtent, phase);
+            ConfigureMaterial(runtimeMaterial, aspect, position, direction);
+
+            if (target == null) return;
+
+            Material renderingMaterial = target.materialForRendering;
+            if (renderingMaterial != null && renderingMaterial != runtimeMaterial)
+            {
+                ConfigureMaterial(renderingMaterial, aspect, position, direction);
+            }
+        }
+
+        private void ConfigureMaterial(
+            Material material,
+            float aspect,
+            float position,
+            Vector4 direction)
+        {
+            material.SetColor(ShineColorId, shineColor);
+            material.SetFloat(ShinePositionId, position);
+            material.SetFloat(ShineAspectId, aspect);
+            material.SetVector(ShineUvRectId, spriteUvRect);
+            material.SetFloat(ShineWidthId, width);
+            material.SetFloat(ShineSoftnessId, softness);
+            material.SetVector(ShineDirectionId, direction);
         }
 
         private IShineWaveRegistry FindRegistry()

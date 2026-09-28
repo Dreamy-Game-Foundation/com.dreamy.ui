@@ -103,19 +103,10 @@ namespace Dreamy.UI.Editor
             {
                 SerializedProperty tween = tweens.GetArrayElementAtIndex(tweenIndex);
                 UITweenDefinition definition = tween.managedReferenceValue as UITweenDefinition;
-                SerializedProperty enabled = tween.FindPropertyRelative("enabled");
 
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField(GetTweenTitle(definition), EditorStyles.boldLabel);
-                if (enabled != null)
-                {
-                    enabled.boolValue = EditorGUILayout.Toggle(
-                        new GUIContent("Enabled"),
-                        enabled.boolValue,
-                        GUILayout.Width(88f));
-                }
-
                 if (GUILayout.Button(EditorGUIUtility.IconContent("Toolbar Minus"), GUILayout.Width(28f)))
                 {
                     tweens.DeleteArrayElementAtIndex(tweenIndex);
@@ -140,8 +131,6 @@ namespace Dreamy.UI.Editor
                    !SerializedProperty.EqualContents(iterator, end))
             {
                 enterChildren = false;
-                if (iterator.name == "enabled") continue;
-
                 EditorGUILayout.PropertyField(iterator, true);
             }
             EditorGUI.indentLevel--;

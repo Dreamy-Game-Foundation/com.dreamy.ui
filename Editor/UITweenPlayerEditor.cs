@@ -74,7 +74,7 @@ namespace Dreamy.UI.Editor
                 }
                 EditorGUILayout.EndHorizontal();
 
-                EditorGUILayout.PropertyField(tweens, new GUIContent("Tweens"), true);
+                DrawTweenCards(tweens);
                 EditorGUILayout.EndVertical();
             }
 
@@ -88,6 +88,70 @@ namespace Dreamy.UI.Editor
             }
         }
 
+        private static void DrawTweenCards(SerializedProperty tweens)
+        {
+            EditorGUILayout.LabelField("Tweens", EditorStyles.boldLabel);
+            if (tweens.arraySize == 0)
+            {
+                EditorGUILayout.HelpBox(
+                    "Use the + button to add an effect for this target.",
+                    MessageType.None);
+                return;
+            }
+
+            for (int tweenIndex = 0; tweenIndex < tweens.arraySize; tweenIndex++)
+            {
+                SerializedProperty tween = tweens.GetArrayElementAtIndex(tweenIndex);
+                UITweenDefinition definition = tween.managedReferenceValue as UITweenDefinition;
+                SerializedProperty enabled = tween.FindPropertyRelative("enabled");
+
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(GetTweenTitle(definition), EditorStyles.boldLabel);
+                if (enabled != null)
+                {
+                    enabled.boolValue = EditorGUILayout.Toggle(
+                        new GUIContent("Enabled"),
+                        enabled.boolValue,
+                        GUILayout.Width(88f));
+                }
+
+                if (GUILayout.Button(EditorGUIUtility.IconContent("Toolbar Minus"), GUILayout.Width(28f)))
+                {
+                    tweens.DeleteArrayElementAtIndex(tweenIndex);
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.EndVertical();
+                    break;
+                }
+                EditorGUILayout.EndHorizontal();
+
+                DrawTweenProperties(tween);
+                EditorGUILayout.EndVertical();
+            }
+        }
+
+        private static void DrawTweenProperties(SerializedProperty tween)
+        {
+            SerializedProperty iterator = tween.Copy();
+            SerializedProperty end = tween.GetEndProperty();
+            bool enterChildren = true;
+            EditorGUI.indentLevel++;
+            while (iterator.NextVisible(enterChildren) &&
+                   !SerializedProperty.EqualContents(iterator, end))
+            {
+                enterChildren = false;
+                if (iterator.name == "enabled") continue;
+
+                EditorGUILayout.PropertyField(iterator, true);
+            }
+            EditorGUI.indentLevel--;
+        }
+
+        private static string GetTweenTitle(UITweenDefinition definition)
+        {
+            return definition == null ? "Missing Tween" : definition.Type + " Tween";
+        }
+
         private void ShowTweenMenu(SerializedProperty tweens)
         {
             GenericMenu menu = new GenericMenu();
@@ -98,7 +162,8 @@ namespace Dreamy.UI.Editor
 
             foreach (Type type in types)
             {
-                menu.AddItem(new GUIContent(ObjectNames.NicifyVariableName(type.Name)), false, () =>
+                UITweenDefinition definition = (UITweenDefinition)Activator.CreateInstance(type);
+                menu.AddItem(new GUIContent(GetTweenTitle(definition)), false, () =>
                 {
                     serializedObject.Update();
                     int index = tweens.arraySize;

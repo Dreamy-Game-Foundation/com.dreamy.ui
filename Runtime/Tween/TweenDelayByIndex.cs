@@ -1,15 +1,15 @@
-using Unity.Collections;
 using UnityEngine;
 
 namespace Dreamy.UI
 {
     [DisallowMultipleComponent]
     public sealed class TweenDelayByIndex : MonoBehaviour
-    
     {
-        [SerializeField, ReadOnly] private int index;
+        [SerializeField, Min(0)] private int index;
 
-        private UITweenBase[] tweens;
+        private bool hasDelayOverride;
+        private float showDelay;
+        private float hideDelay;
 
         public int Index => index;
 
@@ -20,12 +20,11 @@ namespace Dreamy.UI
             int hideIndex)
         {
             index = Mathf.Max(0, value);
-            EnsureTweens();
-
-            float showDelay = index * Mathf.Max(0f, showInterval);
-            float hideDelay = Mathf.Max(0, hideIndex) *
+            hasDelayOverride = true;
+            showDelay = index * Mathf.Max(0f, showInterval);
+            hideDelay = Mathf.Max(0, hideIndex) *
                               Mathf.Max(0f, hideInterval);
-            foreach (UITweenBase tween in tweens)
+            foreach (UITweenBase tween in GetComponents<UITweenBase>())
             {
                 if (tween != null)
                 {
@@ -36,8 +35,8 @@ namespace Dreamy.UI
 
         public void Clear()
         {
-            EnsureTweens();
-            foreach (UITweenBase tween in tweens)
+            hasDelayOverride = false;
+            foreach (UITweenBase tween in GetComponents<UITweenBase>())
             {
                 if (tween != null)
                 {
@@ -46,12 +45,9 @@ namespace Dreamy.UI
             }
         }
 
-        private void EnsureTweens()
+        internal TweenTimingData ApplyTo(TweenTimingData timing)
         {
-            if (tweens == null || tweens.Length == 0 || System.Array.Exists(tweens, tween => tween == null))
-            {
-                tweens = GetComponents<UITweenBase>();
-            }
+            return hasDelayOverride ? timing.WithDelays(showDelay, hideDelay) : timing;
         }
     }
 }

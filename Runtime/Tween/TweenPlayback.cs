@@ -8,6 +8,7 @@ namespace Dreamy.UI
     internal sealed class TweenPlayback
     {
         private Tween currentTween;
+        private UniTaskCompletionSource currentCompletion;
 
         public UniTask Play(
             Tween tween,
@@ -23,6 +24,7 @@ namespace Dreamy.UI
             currentTween = tween;
 
             UniTaskCompletionSource completionSource = new UniTaskCompletionSource();
+            currentCompletion = completionSource;
             tween.OnComplete(() =>
             {
                 try
@@ -37,6 +39,7 @@ namespace Dreamy.UI
                     if (currentTween == tween)
                     {
                         currentTween = null;
+                        currentCompletion = null;
                     }
 
                     completionSource.TrySetResult();
@@ -44,9 +47,10 @@ namespace Dreamy.UI
             });
             tween.OnKill(() =>
             {
-                if (owner != null && currentTween == tween)
+                if (currentTween == tween)
                 {
                     currentTween = null;
+                    currentCompletion = null;
                 }
 
                 completionSource.TrySetResult();
@@ -56,8 +60,19 @@ namespace Dreamy.UI
 
         public void Kill()
         {
-            currentTween?.Kill();
+            Tween tween = currentTween;
+            UniTaskCompletionSource completion = currentCompletion;
             currentTween = null;
+            currentCompletion = null;
+            try
+            {
+                tween?.Kill();
+            }
+            finally
+            {
+                // Do not depend on a DOTween update to settle a delayed/killed playback.
+                completion?.TrySetResult();
+            }
         }
     }
 }

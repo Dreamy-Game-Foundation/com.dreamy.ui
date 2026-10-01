@@ -12,6 +12,7 @@ namespace Dreamy.UI
 
         protected override void Reset()
         {
+            base.Reset();
             canvasGroup = GetComponent<CanvasGroup>();
         }
 

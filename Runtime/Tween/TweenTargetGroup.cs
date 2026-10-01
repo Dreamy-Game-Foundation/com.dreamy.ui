@@ -23,7 +23,7 @@ namespace Dreamy.UI
             {
                 if (tween == null) continue;
 
-                tween.Bind(target, TweenPresetLibrary.Load()?.Get(tween.Type), owner);
+                tween.Bind(target, TweenPresetLibrary.Resolve(tween.Type), owner);
                 destination.Add(tween);
             }
         }

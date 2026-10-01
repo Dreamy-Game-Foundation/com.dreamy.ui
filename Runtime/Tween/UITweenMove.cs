@@ -15,6 +15,7 @@ namespace Dreamy.UI
 
         protected override void Reset()
         {
+            base.Reset();
             rectTransform = transform as RectTransform;
         }
 

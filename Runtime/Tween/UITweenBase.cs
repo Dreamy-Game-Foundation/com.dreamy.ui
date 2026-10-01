@@ -18,7 +18,9 @@ namespace Dreamy.UI
         [SerializeField, Min(0f)] private float durationIn = 0.25f;
         [SerializeField, Min(0f)] private float durationOut = 0.2f;
         [SerializeField] private bool overrideDurationOut;
+        [SerializeField] private bool overrideDelayIn;
         [SerializeField, Min(0f)] private float delayIn;
+        [SerializeField] private bool overrideDelayOut;
         [SerializeField, Min(0f)] private float delayOut;
 
         private bool isInitialized;
@@ -38,16 +40,12 @@ namespace Dreamy.UI
         public Ease EaseOut => ResolveTiming().EaseOut;
         public float DurationIn => ResolveTiming().DurationIn;
         public float DurationOut => ResolveTiming().DurationOut;
-        public float DelayIn => hasDelayOverride
-            ? delayInOverride + staggerDelayIn
-            : delayIn + staggerDelayIn;
-        public float DelayOut => hasDelayOverride
-            ? delayOutOverride + staggerDelayOut
-            : delayOut + staggerDelayOut;
+        public float DelayIn => ResolveTiming().DelayIn;
+        public float DelayOut => ResolveTiming().DelayOut;
 
         protected virtual void Reset()
         {
-            settings = TweenPresetLibrary.Load()?.Get(EffectType);
+            settings = TweenPresetLibrary.Resolve(EffectType);
         }
 
         public UniTask Init()
@@ -178,8 +176,9 @@ namespace Dreamy.UI
 
         private TweenTimingData ResolveTiming()
         {
-            return TweenSettingsResolver.Resolve(
-                settings ? settings : inheritedSettings,
+            TweenSettings preset = settings ? settings : inheritedSettings;
+            TweenTimingData timing = TweenSettingsResolver.Resolve(
+                preset,
                 overrideEaseIn,
                 easeIn,
                 overrideEaseOut,
@@ -188,8 +187,17 @@ namespace Dreamy.UI
                 durationIn,
                 overrideDurationOut,
                 durationOut,
-                DelayIn,
-                DelayOut);
+                // Keep non-zero delays authored before override flags were introduced.
+                overrideDelayIn || delayIn != 0f ? delayIn : preset ? preset.DelayIn : 0f,
+                overrideDelayOut || delayOut != 0f ? delayOut : preset ? preset.DelayOut : 0f);
+            timing = timing.WithDelays(
+                hasDelayOverride ? delayInOverride : timing.DelayIn,
+                hasDelayOverride ? delayOutOverride : timing.DelayOut);
+            TweenDelayByIndex delayByIndex = GetComponent<TweenDelayByIndex>();
+            if (delayByIndex != null) timing = delayByIndex.ApplyTo(timing);
+            return timing.WithDelays(
+                timing.DelayIn + staggerDelayIn,
+                timing.DelayOut + staggerDelayOut);
         }
 
         private TweenPlayback Playback

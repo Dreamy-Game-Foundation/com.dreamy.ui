@@ -77,6 +77,12 @@ namespace Dreamy.UI
 
         public void RebuildCache()
         {
+            foreach (ITween tween in cachedTweens)
+            {
+                if (tween is UnityEngine.Object unityObject && unityObject == null) continue;
+                tween.Kill();
+                if (tween is IStaggerableTween staggerableTween) staggerableTween.ClearStaggerDelay();
+            }
             cachedTweens.Clear();
             if (collectionMode == TweenCollectionMode.Auto)
             {
@@ -111,8 +117,7 @@ namespace Dreamy.UI
                 List<UniTask> tasks = new List<UniTask>();
                 foreach (ITween tween in cachedTweens)
                 {
-                    if (collectionMode == TweenCollectionMode.Auto && !tween.IsAutoRun) continue;
-                    if (collectionMode == TweenCollectionMode.Manual && !tween.IsEnabled) continue;
+                    if (!IsPlayable(tween)) continue;
 
                     tasks.Add(show ? tween.Show(token) : tween.Hide(token));
                 }
@@ -169,7 +174,13 @@ namespace Dreamy.UI
 
         private static TweenSettings ResolvePreset(TweenEffectType type)
         {
-            return TweenPresetLibrary.Load()?.Get(type);
+            return TweenPresetLibrary.Resolve(type);
+        }
+
+        private bool IsPlayable(ITween tween)
+        {
+            return tween.IsEnabled &&
+                (collectionMode == TweenCollectionMode.Manual || tween.IsAutoRun);
         }
 
         private void ApplyStaggerDelays()
@@ -182,8 +193,7 @@ namespace Dreamy.UI
                     staggerableTween.ClearStaggerDelay();
                 }
 
-                if ((collectionMode == TweenCollectionMode.Auto && tween.IsAutoRun) ||
-                    (collectionMode == TweenCollectionMode.Manual && tween.IsEnabled))
+                if (IsPlayable(tween))
                 {
                     playableTweens.Add(tween);
                 }

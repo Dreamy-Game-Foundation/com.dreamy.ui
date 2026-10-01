@@ -133,6 +133,20 @@ namespace Dreamy.UI
         protected abstract void ApplyShown(Transform target);
         protected abstract void ApplyHidden(Transform target);
 
+        private TweenTimingData ResolveTiming()
+        {
+            TweenTimingData timing = overrideSettings.Resolve(settings ? settings : inheritedPreset);
+            TweenDelayByIndex delayByIndex = target != null ? target.GetComponent<TweenDelayByIndex>() : null;
+            if (delayByIndex != null)
+            {
+                timing = delayByIndex.ApplyTo(timing);
+            }
+
+            return timing.WithDelays(
+                timing.DelayIn + staggerDelayIn,
+                timing.DelayOut + staggerDelayOut);
+        }
+
         private UniTask Play(bool show, CancellationToken token)
         {
             if (!enabled || target == null || owner == null)
@@ -141,10 +155,7 @@ namespace Dreamy.UI
             }
 
             Init();
-            TweenTimingData timing = overrideSettings.Resolve(settings ? settings : inheritedPreset);
-            TweenTimingData resolved = timing.WithDelays(
-                timing.DelayIn + staggerDelayIn,
-                timing.DelayOut + staggerDelayOut);
+            TweenTimingData resolved = ResolveTiming();
             try
             {
                 Tween tween = CreateTween(target, show, resolved);

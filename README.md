@@ -79,19 +79,36 @@ Create timing preset assets from `Assets/Create/Dreamy/UI/Tween Preset` and
 assign them by type in `TweenPresetLibrary`. Manual effects receive their
 matching preset as soon as they are created in the Inspector.
 
-Each tween can override the shared ease and duration values. Enable `Stagger`
-on a `UITweenPlayer` to apply show/hide intervals in cached order for both
-Auto and Manual mode; hide can use the reverse order. Existing
-`TweenDelayByIndex` and `TweenDelayControl` remain available for component
-lists that need explicit per-item ordering.
+Each tween can independently override ease, duration, and delay for show and
+hide. Auto components retain previously authored non-zero delays; enable
+`Override Delay In/Out` to explicitly replace a preset delay with zero.
 
-Create one `TweenPresetLibrary` in
-`Assets/Resources/Dreamy/UI/TweenPresetLibrary.asset`. Every player loads it
-automatically. Effects resolve settings in this order: effect preset, library
-preset for that effect type, then code fallback. Ease, duration, and delay
-overrides are independent for show and hide, so an un-overridden field keeps
-following its preset. `FadeTweenEffect` adds a `CanvasGroup` to its target when
-needed.
+Defaults resolve through the effect's assigned preset, then
+`Resources/Dreamy/UI/TweenPresetLibrary`, then the original
+`Resources/Tween/<Type>TweenSettings` path (Scale, Fade, Move, Rotate, Size),
+then code defaults. Component `Reset` loads and assigns the matching preset.
+Manual effects receive it when added in the Inspector; unassigned effects
+inherit it at runtime. Library mappings support custom asset locations without
+changing resource paths in code.
+
+Enable `Stagger` on a `UITweenPlayer` to add show/hide intervals in cached
+**effect** order in both Auto and Manual modes. Multiple effects on one target
+occupy separate stagger slots. Disabled effects and Auto components with
+manual run type do not consume slots. Hide can reverse this order. Stagger is
+recomputed for each playback, so repeated calls do not accumulate delay.
+
+For **target/item** ordering, add `TweenDelayByIndex` to each target and use
+`TweenDelayControl.ApplyDelays()` on their parent. This works for both Auto
+components and Manual definitions bound to those targets. All effects on the
+same target receive the same index delay. Call `ApplyDelays()` again after
+adding/reordering items. `ClearDelays()` restores each effect's configured
+preset/override delay. Effective delay is:
+
+`(index delay when applied, otherwise preset/override delay) + player stagger`
+
+The index delay replaces the configured delay, preserving the original helper
+behavior. Neither delay helper mutates shared settings assets.
+`FadeTweenEffect` adds a `CanvasGroup` to its target when needed.
 
 ## Progress and shine
 

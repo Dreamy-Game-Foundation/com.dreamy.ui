@@ -25,7 +25,7 @@ namespace Dreamy.UI.Editor
             EditorGUILayout.PropertyField(collectionMode);
             EditorGUILayout.PropertyField(stagger, true);
             EditorGUILayout.HelpBox(
-                "Default presets are loaded automatically from Resources/Dreamy/UI/TweenPresetLibrary.",
+                "Defaults: Resources/Dreamy/UI/TweenPresetLibrary, then Resources/Tween/<Type>TweenSettings.",
                 MessageType.Info);
             if (TweenPresetLibrary.Load() == null &&
                 GUILayout.Button("Create Tween Preset Library"))
@@ -158,7 +158,7 @@ namespace Dreamy.UI.Editor
                     int index = tweens.arraySize;
                     tweens.InsertArrayElementAtIndex(index);
                     UITweenDefinition tween = (UITweenDefinition)Activator.CreateInstance(type);
-                    tween.ApplyPresetIfMissing(TweenPresetLibrary.Load()?.Get(tween.Type));
+                    tween.ApplyPresetIfMissing(TweenPresetLibrary.Resolve(tween.Type));
                     tweens.GetArrayElementAtIndex(index).managedReferenceValue = tween;
                     serializedObject.ApplyModifiedProperties();
                 });

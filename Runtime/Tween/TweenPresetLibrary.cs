@@ -27,6 +27,15 @@ namespace Dreamy.UI
             return cached;
         }
 
+        /// <summary>Library mapping first, then the original Resources/Tween preset path.</summary>
+        public static TweenSettings Resolve(TweenEffectType type)
+        {
+            TweenSettings preset = Load()?.Get(type);
+            return preset != null
+                ? preset
+                : Resources.Load<TweenSettings>("Tween/" + type + "TweenSettings");
+        }
+
         public TweenSettings Get(TweenEffectType type)
         {
             foreach (TweenDefaultPreset entry in presets)

@@ -136,7 +136,7 @@ namespace Dreamy.UI
         private TweenTimingData ResolveTiming()
         {
             TweenTimingData timing = overrideSettings.Resolve(settings ? settings : inheritedPreset);
-            TweenDelayByIndex delayByIndex = target != null ? target.GetComponent<TweenDelayByIndex>() : null;
+            TweenDelayByIndex delayByIndex = target != null ? target.GetComponentInParent<TweenDelayByIndex>(true) : null;
             if (delayByIndex != null)
             {
                 timing = delayByIndex.ApplyTo(timing);

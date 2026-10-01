@@ -81,6 +81,62 @@ namespace Dreamy.UI.Tests.Editor
 
         [TestCase(TweenCollectionMode.Auto)]
         [TestCase(TweenCollectionMode.Manual)]
+        public void SlotDelay_AppliesToInactiveDescendants_AndClearRestoresPreset(TweenCollectionMode mode)
+        {
+            GameObject slotObject = new GameObject("Slot");
+            slotObject.transform.SetParent(root.transform);
+            TweenDelayByIndex slot = slotObject.AddComponent<TweenDelayByIndex>();
+            Transform target = AddTween(mode);
+            target.SetParent(slotObject.transform);
+            target.gameObject.SetActive(false);
+            player.RebuildCache();
+            slot.OverrideDelay(true, 0.2f, 0f);
+            AssertTiming(player.Tweens[0], 0.2f, 0f);
+            slot.OverrideDelay(false, 0f, 0f);
+            AssertTiming(player.Tweens[0], 0.4f, 0.3f);
+        }
+
+        [Test]
+        public void DelayControl_UsesHierarchyOrder_StartDelay_AndIncludesInactiveSlots()
+        {
+            TweenDelayControl control = root.AddComponent<TweenDelayControl>();
+            Set(control, "startDelay", 0.1f);
+            Set(control, "showInterval", 0.05f);
+            Transform first = AddTween(TweenCollectionMode.Auto);
+            first.gameObject.AddComponent<TweenDelayByIndex>();
+            Transform second = AddTween(TweenCollectionMode.Auto);
+            second.gameObject.AddComponent<TweenDelayByIndex>();
+            second.gameObject.SetActive(false);
+            control.ApplyStaggerDelays();
+            AssertTiming(first.GetComponent<UITweenScale>(), 0.1f, 0f);
+            AssertTiming(second.GetComponent<UITweenScale>(), 0.15f, 0f);
+            second.SetAsFirstSibling();
+            control.ApplyStaggerDelays();
+            AssertTiming(second.GetComponent<UITweenScale>(), 0.1f, 0f);
+            AssertTiming(first.GetComponent<UITweenScale>(), 0.15f, 0f);
+            control.ClearDelays();
+            AssertTiming(first.GetComponent<UITweenScale>(), 0.4f, 0.3f);
+            AssertTiming(second.GetComponent<UITweenScale>(), 0.4f, 0.3f);
+        }
+
+        [Test]
+        public void SlotAwake_RecalculatesDelaysForNewSlot()
+        {
+            TweenDelayControl control = root.AddComponent<TweenDelayControl>();
+            Transform first = AddTween(TweenCollectionMode.Auto);
+            first.gameObject.AddComponent<TweenDelayByIndex>();
+            control.ApplyStaggerDelays();
+            Transform spawned = AddTween(TweenCollectionMode.Auto);
+            spawned.SetAsFirstSibling();
+            TweenDelayByIndex slot = spawned.gameObject.AddComponent<TweenDelayByIndex>();
+            typeof(TweenDelayByIndex).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic)
+                .Invoke(slot, null);
+            AssertTiming(spawned.GetComponent<UITweenScale>(), 0f, 0f);
+            AssertTiming(first.GetComponent<UITweenScale>(), 0.05f, 0f);
+        }
+
+        [TestCase(TweenCollectionMode.Auto)]
+        [TestCase(TweenCollectionMode.Manual)]
         public void ExplicitZeroDelay_OverridesPreset(TweenCollectionMode mode)
         {
             AddTween(mode);

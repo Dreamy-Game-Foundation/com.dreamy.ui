@@ -13,37 +13,32 @@ namespace Dreamy.UI
 
         public int Index => index;
 
-        public void Apply(
-            int value,
-            float showInterval,
-            float hideInterval,
-            int hideIndex)
+        private void Awake()
         {
-            index = Mathf.Max(0, value);
-            hasDelayOverride = true;
-            showDelay = index * Mathf.Max(0f, showInterval);
-            hideDelay = Mathf.Max(0, hideIndex) *
-                              Mathf.Max(0f, hideInterval);
-            foreach (UITweenBase tween in GetComponents<UITweenBase>())
+            GetComponentInParent<TweenDelayControl>(true)?.ApplyStaggerDelays();
+        }
+
+        /// <summary>Overrides show/hide delays for every tween in this slot's subtree.</summary>
+        public void OverrideDelay(bool useDelay, float delayIn, float delayOut)
+        {
+            hasDelayOverride = useDelay;
+            showDelay = Mathf.Max(0f, delayIn);
+            hideDelay = Mathf.Max(0f, delayOut);
+            foreach (UITweenBase tween in GetComponentsInChildren<UITweenBase>(true))
             {
-                if (tween != null)
-                {
-                    tween.SetDelayOverride(showDelay, hideDelay);
-                }
+                if (useDelay) tween.SetDelayOverride(showDelay, hideDelay);
+                else tween.ClearDelayOverride();
             }
         }
 
-        public void Clear()
+        public void Apply(int value, float showInterval, float hideInterval, int hideIndex)
         {
-            hasDelayOverride = false;
-            foreach (UITweenBase tween in GetComponents<UITweenBase>())
-            {
-                if (tween != null)
-                {
-                    tween.ClearDelayOverride();
-                }
-            }
+            index = Mathf.Max(0, value);
+            OverrideDelay(true, index * Mathf.Max(0f, showInterval),
+                Mathf.Max(0, hideIndex) * Mathf.Max(0f, hideInterval));
         }
+
+        public void Clear() => OverrideDelay(false, 0f, 0f);
 
         internal TweenTimingData ApplyTo(TweenTimingData timing)
         {

@@ -193,8 +193,6 @@ namespace Dreamy.UI
             timing = timing.WithDelays(
                 hasDelayOverride ? delayInOverride : timing.DelayIn,
                 hasDelayOverride ? delayOutOverride : timing.DelayOut);
-            TweenDelayByIndex delayByIndex = GetComponent<TweenDelayByIndex>();
-            if (delayByIndex != null) timing = delayByIndex.ApplyTo(timing);
             return timing.WithDelays(
                 timing.DelayIn + staggerDelayIn,
                 timing.DelayOut + staggerDelayOut);

@@ -2,53 +2,45 @@ using UnityEngine;
 
 namespace Dreamy.UI
 {
+    /// <summary>Assigns increasing show delays to child slots in hierarchy order.</summary>
+    [DefaultExecutionOrder(-100)]
     [DisallowMultipleComponent]
     public sealed class TweenDelayControl : MonoBehaviour
     {
         [SerializeField, Min(0f)] private float showInterval = 0.05f;
-        [SerializeField, Min(0f)] private float hideInterval = 0.03f;
-        [SerializeField] private bool reverseHideOrder = true;
-        [SerializeField] private bool includeInactive = true;
+        [SerializeField, Min(0f)] private float startDelay;
 
         private void Awake()
         {
-            ApplyDelays();
+            ApplyStaggerDelays();
         }
 
         private void OnValidate()
         {
             showInterval = Mathf.Max(0f, showInterval);
-            hideInterval = Mathf.Max(0f, hideInterval);
+            startDelay = Mathf.Max(0f, startDelay);
         }
 
+        /// <summary>Recalculates delays, including inactive and runtime-spawned slots.</summary>
         [ContextMenu("Apply Tween Delays")]
-        public void ApplyDelays()
+        public void ApplyStaggerDelays()
         {
-            TweenDelayByIndex[] entries =
-                GetComponentsInChildren<TweenDelayByIndex>(includeInactive);
-
+            TweenDelayByIndex[] entries = GetComponentsInChildren<TweenDelayByIndex>(true);
+            float delay = Mathf.Max(0f, startDelay);
             for (int index = 0; index < entries.Length; index++)
             {
-                int hideIndex = reverseHideOrder
-                    ? entries.Length - index - 1
-                    : index;
-                entries[index].Apply(
-                    index,
-                    showInterval,
-                    hideInterval,
-                    hideIndex);
+                entries[index].OverrideDelay(true, delay, 0f);
+                delay += Mathf.Max(0f, showInterval);
             }
         }
+
+        public void ApplyDelays() => ApplyStaggerDelays();
 
         [ContextMenu("Clear Tween Delays")]
         public void ClearDelays()
         {
-            TweenDelayByIndex[] entries =
-                GetComponentsInChildren<TweenDelayByIndex>(includeInactive);
-            foreach (TweenDelayByIndex entry in entries)
-            {
+            foreach (TweenDelayByIndex entry in GetComponentsInChildren<TweenDelayByIndex>(true))
                 entry.Clear();
-            }
         }
     }
 }

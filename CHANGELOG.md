@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Removed effect-level stagger timing from `UITweenPlayer`. `TweenDelayControl`
+  now owns show/hide group delays through `TweenDelayByIndex`.
 - Added `UITweenPlayer`, a single Auto/Manual hybrid player that excludes
   effects owned by nested players and prunes destroyed references safely.
 - Removed the duplicate entry-based tween system and the old `TweenPlayer`

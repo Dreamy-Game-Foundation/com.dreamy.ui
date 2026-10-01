@@ -91,23 +91,17 @@ Manual effects receive it when added in the Inspector; unassigned effects
 inherit it at runtime. Library mappings support custom asset locations without
 changing resource paths in code.
 
-Enable `Stagger` on a `UITweenPlayer` to add show/hide intervals in cached
-**effect** order in both Auto and Manual modes. Multiple effects on one target
-occupy separate stagger slots. Disabled effects and Auto components with
-manual run type do not consume slots. Hide can reverse this order. Stagger is
-recomputed for each playback, so repeated calls do not accumulate delay.
-
-For **target/item** ordering, add `TweenDelayByIndex` to each target and use
-`TweenDelayControl.ApplyDelays()` on their parent. This works for both Auto
-components and Manual definitions bound to those targets. All effects on the
-same target receive the same index delay. Call `ApplyDelays()` again after
-adding/reordering items. `ClearDelays()` restores each effect's configured
-preset/override delay. Effective delay is:
-
-`(index delay when applied, otherwise preset/override delay) + player stagger`
-
-The index delay replaces the configured delay, preserving the original helper
-behavior. Neither delay helper mutates shared settings assets.
+`UITweenPlayer` plays effects only; it does not own stagger timing. For target
+or item sequencing, add one `TweenDelayControl` above the animated hierarchy
+and add `TweenDelayByIndex` to each item group. The control assigns group
+indexes in hierarchy order, applies `Show Interval`, and uses the small
+`Hide Interval` in reverse group order by default. Every tween in a marked
+group's subtree receives the same delay; a nested marker starts a separate
+group and takes precedence for its descendants. This works for Auto components
+and Manual definitions bound to a target in the marked subtree. Call
+`ApplyDelays()` after adding or reordering groups. `ClearDelays()` restores
+each effect's configured preset/override delay. The index delay replaces the
+configured delay and never mutates shared settings assets.
 `FadeTweenEffect` adds a `CanvasGroup` to its target when needed.
 
 ## Progress and shine

@@ -10,12 +10,10 @@ namespace Dreamy.UI
     public sealed class UITweenPlayer : MonoBehaviour
     {
         [SerializeField] private TweenCollectionMode collectionMode = TweenCollectionMode.Auto;
-        [SerializeField] private TweenStaggerSettings stagger = new TweenStaggerSettings();
         [SerializeField] private List<TweenTargetGroup> manualTargets =
             new List<TweenTargetGroup>();
 
         private readonly List<ITween> cachedTweens = new List<ITween>();
-        private readonly List<ITween> playableTweens = new List<ITween>();
         private bool cacheDirty = true;
         private bool initialized;
 
@@ -81,7 +79,6 @@ namespace Dreamy.UI
             {
                 if (tween is UnityEngine.Object unityObject && unityObject == null) continue;
                 tween.Kill();
-                if (tween is IStaggerableTween staggerableTween) staggerableTween.ClearStaggerDelay();
             }
             cachedTweens.Clear();
             if (collectionMode == TweenCollectionMode.Auto)
@@ -111,7 +108,6 @@ namespace Dreamy.UI
         private async UniTask Play(bool show, CancellationToken token)
         {
             EnsureCache();
-            ApplyStaggerDelays();
             try
             {
                 List<UniTask> tasks = new List<UniTask>();
@@ -183,38 +179,5 @@ namespace Dreamy.UI
                 (collectionMode == TweenCollectionMode.Manual || tween.IsAutoRun);
         }
 
-        private void ApplyStaggerDelays()
-        {
-            playableTweens.Clear();
-            foreach (ITween tween in cachedTweens)
-            {
-                if (tween is IStaggerableTween staggerableTween)
-                {
-                    staggerableTween.ClearStaggerDelay();
-                }
-
-                if (IsPlayable(tween))
-                {
-                    playableTweens.Add(tween);
-                }
-            }
-
-            if (!stagger.IsEnabled)
-            {
-                return;
-            }
-
-            int count = playableTweens.Count;
-            for (int index = 0; index < count; index++)
-            {
-                int hideIndex = stagger.ReverseHideOrder ? count - index - 1 : index;
-                if (playableTweens[index] is IStaggerableTween staggerableTween)
-                {
-                    staggerableTween.SetStaggerDelay(
-                        stagger.GetShowDelay(index),
-                        stagger.GetHideDelay(hideIndex));
-                }
-            }
-        }
     }
 }

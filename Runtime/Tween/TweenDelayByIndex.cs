@@ -33,9 +33,14 @@ namespace Dreamy.UI
 
         public void Apply(int value, float showInterval, float hideInterval, int hideIndex)
         {
-            index = Mathf.Max(0, value);
-            OverrideDelay(true, index * Mathf.Max(0f, showInterval),
+            Apply(value, Mathf.Max(0, value) * Mathf.Max(0f, showInterval),
                 Mathf.Max(0, hideIndex) * Mathf.Max(0f, hideInterval));
+        }
+
+        internal void Apply(int value, float delayIn, float delayOut)
+        {
+            index = Mathf.Max(0, value);
+            OverrideDelay(true, delayIn, delayOut);
         }
 
         public void Clear() => OverrideDelay(false, 0f, 0f);

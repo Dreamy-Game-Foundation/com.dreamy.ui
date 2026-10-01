@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Dreamy.UI
 {
-    public abstract class UITweenBase : MonoBehaviour, ITween, IStaggerableTween
+    public abstract class UITweenBase : MonoBehaviour, ITween
     {
         [SerializeField] protected ETweenRun runType = ETweenRun.Auto;
         [SerializeField] protected TweenSettings settings;
@@ -28,8 +28,6 @@ namespace Dreamy.UI
         private bool hasDelayOverride;
         private float delayInOverride;
         private float delayOutOverride;
-        private float staggerDelayIn;
-        private float staggerDelayOut;
         private bool initializationFailed;
         [System.NonSerialized] private TweenSettings inheritedSettings;
 
@@ -98,18 +96,6 @@ namespace Dreamy.UI
         public void ClearDelayOverride()
         {
             hasDelayOverride = false;
-        }
-
-        public void SetStaggerDelay(float showDelay, float hideDelay)
-        {
-            staggerDelayIn = Mathf.Max(0f, showDelay);
-            staggerDelayOut = Mathf.Max(0f, hideDelay);
-        }
-
-        public void ClearStaggerDelay()
-        {
-            staggerDelayIn = 0f;
-            staggerDelayOut = 0f;
         }
 
         internal void SetInheritedSettings(TweenSettings value)
@@ -193,9 +179,7 @@ namespace Dreamy.UI
             timing = timing.WithDelays(
                 hasDelayOverride ? delayInOverride : timing.DelayIn,
                 hasDelayOverride ? delayOutOverride : timing.DelayOut);
-            return timing.WithDelays(
-                timing.DelayIn + staggerDelayIn,
-                timing.DelayOut + staggerDelayOut);
+            return timing;
         }
 
         private TweenPlayback Playback

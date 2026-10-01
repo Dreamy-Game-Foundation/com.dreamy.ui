@@ -97,26 +97,35 @@ namespace Dreamy.UI.Tests.Editor
         }
 
         [Test]
-        public void DelayControl_UsesHierarchyOrder_StartDelay_AndIncludesInactiveSlots()
+        public void DelayControl_AppliesShowAndReverseHideDelays_ByHierarchyGroup()
         {
             TweenDelayControl control = root.AddComponent<TweenDelayControl>();
             Set(control, "startDelay", 0.1f);
             Set(control, "showInterval", 0.05f);
+            Set(control, "hideInterval", 0.03f);
+            GameObject firstGroup = new GameObject("First group");
+            firstGroup.transform.SetParent(root.transform);
+            TweenDelayByIndex firstSlot = firstGroup.AddComponent<TweenDelayByIndex>();
             Transform first = AddTween(TweenCollectionMode.Auto);
-            first.gameObject.AddComponent<TweenDelayByIndex>();
+            first.SetParent(firstGroup.transform);
             Transform second = AddTween(TweenCollectionMode.Auto);
-            second.gameObject.AddComponent<TweenDelayByIndex>();
-            second.gameObject.SetActive(false);
+            second.SetParent(firstGroup.transform);
+            GameObject secondGroup = new GameObject("Second group");
+            secondGroup.transform.SetParent(root.transform);
+            TweenDelayByIndex secondSlot = secondGroup.AddComponent<TweenDelayByIndex>();
+            Transform third = AddTween(TweenCollectionMode.Auto);
+            third.SetParent(secondGroup.transform);
+            third.gameObject.SetActive(false);
             control.ApplyStaggerDelays();
-            AssertTiming(first.GetComponent<UITweenScale>(), 0.1f, 0f);
-            AssertTiming(second.GetComponent<UITweenScale>(), 0.15f, 0f);
-            second.SetAsFirstSibling();
-            control.ApplyStaggerDelays();
-            AssertTiming(second.GetComponent<UITweenScale>(), 0.1f, 0f);
-            AssertTiming(first.GetComponent<UITweenScale>(), 0.15f, 0f);
+            AssertTiming(first.GetComponent<UITweenScale>(), 0.1f, 0.03f);
+            AssertTiming(second.GetComponent<UITweenScale>(), 0.1f, 0.03f);
+            AssertTiming(third.GetComponent<UITweenScale>(), 0.15f, 0f);
+            Assert.That(firstSlot.Index, Is.Zero);
+            Assert.That(secondSlot.Index, Is.EqualTo(1));
             control.ClearDelays();
             AssertTiming(first.GetComponent<UITweenScale>(), 0.4f, 0.3f);
             AssertTiming(second.GetComponent<UITweenScale>(), 0.4f, 0.3f);
+            AssertTiming(third.GetComponent<UITweenScale>(), 0.4f, 0.3f);
         }
 
         [Test]
@@ -131,7 +140,7 @@ namespace Dreamy.UI.Tests.Editor
             TweenDelayByIndex slot = spawned.gameObject.AddComponent<TweenDelayByIndex>();
             typeof(TweenDelayByIndex).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic)
                 .Invoke(slot, null);
-            AssertTiming(spawned.GetComponent<UITweenScale>(), 0f, 0f);
+            AssertTiming(spawned.GetComponent<UITweenScale>(), 0f, 0.03f);
             AssertTiming(first.GetComponent<UITweenScale>(), 0.05f, 0f);
         }
 
@@ -147,43 +156,6 @@ namespace Dreamy.UI.Tests.Editor
             Set(settingsOwner, "overrideDelayIn", true);
             Set(settingsOwner, "overrideDelayOut", true);
             AssertTiming(player.Tweens[0], 0f, 0f);
-        }
-
-        [TestCase(TweenCollectionMode.Auto)]
-        [TestCase(TweenCollectionMode.Manual)]
-        public void Stagger_AddsOnce_ReversesHide_AndClearsWhenDisabled(TweenCollectionMode mode)
-        {
-            AddTween(mode);
-            AddTween(mode);
-            object stagger = Get(player, "stagger");
-            Set(stagger, "enabled", true);
-            Set(stagger, "showInterval", 0.05f);
-            Set(stagger, "hideInterval", 0.03f);
-            player.Init();
-            PlayAndKill();
-            AssertTiming(player.Tweens[0], 0.4f, 0.33f);
-            AssertTiming(player.Tweens[1], 0.45f, 0.3f);
-            PlayAndKill();
-            AssertTiming(player.Tweens[1], 0.45f, 0.3f);
-            Set(stagger, "enabled", false);
-            PlayAndKill();
-            AssertTiming(player.Tweens[0], 0.4f, 0.3f);
-            AssertTiming(player.Tweens[1], 0.4f, 0.3f);
-        }
-
-        [TestCase(TweenCollectionMode.Auto)]
-        [TestCase(TweenCollectionMode.Manual)]
-        public void DisabledEffect_DoesNotConsumeStaggerSlot(TweenCollectionMode mode)
-        {
-            AddTween(mode);
-            AddTween(mode);
-            player.RebuildCache();
-            if (mode == TweenCollectionMode.Auto) ((UITweenBase)player.Tweens[0]).enabled = false;
-            else Set(player.Tweens[0], "enabled", false);
-            Set(Get(player, "stagger"), "enabled", true);
-            player.Init();
-            PlayAndKill();
-            AssertTiming(player.Tweens[1], 0.4f, 0.3f);
         }
 
         [Test]
@@ -272,13 +244,6 @@ namespace Dreamy.UI.Tests.Editor
                 ((List<TweenTargetGroup>)Get(player, "manualTargets")).Add(group);
             }
             return target.transform;
-        }
-
-        private void PlayAndKill()
-        {
-            UniTask task = player.ShowTween(CancellationToken.None);
-            player.Kill();
-            task.Forget();
         }
 
         private static void MakeManual(Transform target)

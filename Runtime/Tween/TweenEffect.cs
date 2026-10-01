@@ -46,7 +46,7 @@ namespace Dreamy.UI
     }
 
     [Serializable]
-    public abstract class UITweenDefinition : ITween, IStaggerableTween
+    public abstract class UITweenDefinition : ITween
     {
         [SerializeField] private bool enabled = true;
         [SerializeField] private TweenSettings settings;
@@ -58,8 +58,6 @@ namespace Dreamy.UI
         [NonSerialized] private Transform target;
         [NonSerialized] private TweenSettings inheritedPreset;
         [NonSerialized] private Component owner;
-        [NonSerialized] private float staggerDelayIn;
-        [NonSerialized] private float staggerDelayOut;
 
         public bool IsAutoRun => false;
         public bool IsEnabled => enabled;
@@ -116,18 +114,6 @@ namespace Dreamy.UI
             playback?.Kill();
         }
 
-        public void SetStaggerDelay(float showDelay, float hideDelay)
-        {
-            staggerDelayIn = Mathf.Max(0f, showDelay);
-            staggerDelayOut = Mathf.Max(0f, hideDelay);
-        }
-
-        public void ClearStaggerDelay()
-        {
-            staggerDelayIn = 0f;
-            staggerDelayOut = 0f;
-        }
-
         protected abstract void CaptureShownState(Transform target);
         protected abstract Tween CreateTween(Transform target, bool show, TweenTimingData timing);
         protected abstract void ApplyShown(Transform target);
@@ -142,9 +128,7 @@ namespace Dreamy.UI
                 timing = delayByIndex.ApplyTo(timing);
             }
 
-            return timing.WithDelays(
-                timing.DelayIn + staggerDelayIn,
-                timing.DelayOut + staggerDelayOut);
+            return timing;
         }
 
         private UniTask Play(bool show, CancellationToken token)

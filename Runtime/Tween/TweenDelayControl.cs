@@ -2,13 +2,14 @@ using UnityEngine;
 
 namespace Dreamy.UI
 {
-    /// <summary>Assigns increasing show delays to child slots in hierarchy order.</summary>
     [DefaultExecutionOrder(-100)]
     [DisallowMultipleComponent]
     public sealed class TweenDelayControl : MonoBehaviour
     {
         [SerializeField, Min(0f)] private float showInterval = 0.05f;
+        [SerializeField, Min(0f)] private float hideInterval = 0.03f;
         [SerializeField, Min(0f)] private float startDelay;
+        [SerializeField] private bool reverseHideOrder = true;
 
         private void Awake()
         {
@@ -18,6 +19,7 @@ namespace Dreamy.UI
         private void OnValidate()
         {
             showInterval = Mathf.Max(0f, showInterval);
+            hideInterval = Mathf.Max(0f, hideInterval);
             startDelay = Mathf.Max(0f, startDelay);
         }
 
@@ -26,11 +28,13 @@ namespace Dreamy.UI
         public void ApplyStaggerDelays()
         {
             TweenDelayByIndex[] entries = GetComponentsInChildren<TweenDelayByIndex>(true);
-            float delay = Mathf.Max(0f, startDelay);
-            for (int index = 0; index < entries.Length; index++)
+            int count = entries.Length;
+            for (int index = 0; index < count; index++)
             {
-                entries[index].OverrideDelay(true, delay, 0f);
-                delay += Mathf.Max(0f, showInterval);
+                int hideIndex = reverseHideOrder ? count - index - 1 : index;
+                entries[index].Apply(index,
+                    Mathf.Max(0f, startDelay) + index * Mathf.Max(0f, showInterval),
+                    hideIndex * Mathf.Max(0f, hideInterval));
             }
         }
 

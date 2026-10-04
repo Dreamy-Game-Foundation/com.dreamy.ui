@@ -1,125 +1,80 @@
-# com.dreamy.ui
+# Dreamy UI
 
-Reusable UI package for Dreamy internal Unity projects.
+Package thuộc Dreamy Game Studio. Hướng dẫn dưới đây mô tả cấu trúc, cách cài vào project và tích hợp ở root/scene.
 
-The v0.1 API follows the current project `Assets/_BaseSource/Base.UI` flow: `UIPanel` registers with `PanelManager`, panels can be created from Addressables, Android/Escape back closes the latest backable panel, tabs are grouped by button/page, and tween components or tween effect entries drive show/hide animation.
+## Cài package
 
-## Requirements
+Dùng Unity 6000.0 trở lên. Sandbox đã tham chiếu package bằng `file:../LocalPackages/com.dreamy.ui`. Project khác dùng Package Manager > + > Install package from disk và chọn package.json, hoặc Git URL của repository nội bộ. Cài cả dependency Dreamy/Git vào manifest của game; version dependency không tự cấu hình registry riêng.
 
-- Unity 6000.0+
-- `com.dreamy.core`
-- `com.dreamy.assets`
-- UniTask
-- DOTween
-- Unity UI
-- TextMeshPro if using `UITabButton` text state
+Dependency trực tiếp theo package.json:
 
-The game template should own these dependency URLs.
+- `com.unity.ugui` (2.0.0)
+- `com.cysharp.unitask` (2.5.10)
+- `com.demigiant.dotween` (0.0.3)
+- `com.dreamy.core` (1.1.2)
+- `com.dreamy.assets` (0.1.1)
 
-Assembly dependency direction:
+## Cấu trúc và asmdef
 
-```text
-com.dreamy.ui -> com.dreamy.assets -> com.dreamy.core
-com.dreamy.ui -> com.dreamy.core
-```
+| Assembly | Reference | Phạm vi |
+| --- | --- | --- |
+| `Dreamy.UI.Editor` | Dreamy.UI.Runtime | Chỉ Editor |
+| `Dreamy.UI.Runtime` | Dreamy.Core.Runtime, Dreamy.Assets.Runtime, UniTask, DOTween.Modules, Unity.TextMeshPro | Runtime |
 
-`com.dreamy.core` must not reference UI or assets.
+Trong asmdef của game, thêm assembly chứa API trực tiếp sử dụng. Code bootstrap reference thêm Core/DataConfig/Datasave/Economy theo nhu cầu; code async reference UniTask. Code gọi type sample reference assembly sample. Giữ Editor reference trong asmdef Editor-only.
 
-## Usage
+## Cấu trúc và thiết lập scene
 
-Create a panel prefab with a `UIPanel` subclass:
+Runtime/Panel chứa UIPanel, PanelManager, UILayerRoot; Button/Tab xử lý tương tác; Tween chứa player/effect/preset; Utils chứa safe area, progress và shine; Shaders chứa shader UI. Editor hỗ trợ Inspector. UI không có service installer ở GameInstaller; scene đặt PanelManager trên Canvas và có EventSystem/input module.
 
 ```csharp
-public sealed class MainMenuPanel : UIPanel
+using Dreamy.UI;
+public sealed class HomePanel : UIPanel
 {
     public override bool CanBack => false;
 }
 ```
 
-Add a `PanelManager` to the UI root canvas, then:
+UIPanel chọn Layer Screen/Popup/Overlay; đặt UILayerRoot dưới manager hoặc để manager tạo root thiếu. Override CanCache=true nếu muốn deactivate khi đóng và dùng lại instance. Escape/back đóng panel gần nhất có CanBack. Root phải cài service feature trước khi tạo panel.
+
+## Animation và tiện ích
+
+UITweenPlayer có Auto (thu thập component dưới hierarchy, dừng tại player lồng) và Manual (nhóm target/effect được cấu hình trong Inspector). Tạo preset tại Assets/Create/Dreamy/UI/Tween Preset; cấu hình TweenPresetLibrary hoặc override duration/ease/delay cho show/hide.
+
+TweenDelayControl và marker TweenDelayByIndex dùng cho item xuất hiện tuần tự. Sau spawn/reorder, cập nhật delay theo API của control; giữ một chủ sở hữu timing. UITweenPlayer chỉ chạy effect. UIProgressBar dùng Image Filled; UIShineWave có material runtime riêng, controller tổ chức các đợt shine. UIScalable có thể dùng pulse khi idle.
+
+Trong method async UniTask, dùng Show để mở panel đã tự bind, Create để bind presenter trước animation, Close để đóng, Transition để chuyển từ panel hiện tại. Game giữ localization, art, âm thanh và logic scene.
+## Sample
+
+Manifest hiện không khai báo sample để import qua Package Manager.
+
+## Addressables Group và class address
+
+1. Lưu prefab/variant của game tại Assets/_Project/Prefabs/Panel/HomePanel.prefab. Với UIPanel, root phải có subclass tương ứng.
+2. Mở Window > Asset Management > Addressables > Groups; tạo settings nếu chưa có.
+3. Tạo group UI Panels và kéo prefab vào group.
+4. Đặt cột Address thành Panel/HomePanel.prefab.
+5. Tạo class dùng chung trong game:
 
 ```csharp
-MainMenuPanel panel = await PanelManager.Instance.Show<MainMenuPanel>("ui_main_menu");
-await PanelManager.Instance.Close<MainMenuPanel>();
+public static class PanelAddress
+{
+    public const string Home = "Panel/HomePanel.prefab";
+    public const string Current = "Panel/HomePanel.prefab";
+}
 ```
 
-Panels can override `Layer` to select `Screen`, `Popup`, or `Overlay`. Add a
-`UILayerRoot` child for each layer under `PanelManager`; the manager discovers
-them automatically. At runtime, missing roots are created as full-stretch
-`RectTransform` objects in Screen, Popup, Overlay order.
+Đường dẫn asset trên disk và address là hai giá trị riêng. Address do bạn đặt, constant phải khớp chính xác cột Address. Tên group không phải key tải. HomePanel là ví dụ subclass do game tự tạo.
 
-Override `CanCache` with `true` to deactivate a hidden panel instead of
-destroying it. A later `Show<TPanel>()` reuses the cached instance.
-
-Use transition when opening a child panel over the current panel:
+Scene cần Canvas có PanelManager và EventSystem/input module. Chờ root cài service xong. Các lệnh sau nằm trong method async UniTask; asmdef reference Dreamy.UI.Runtime, UniTask và assembly chứa type panel.
 
 ```csharp
-await PanelManager.Instance.Transition<ShopPanel>("ui_shop");
+var panel = await PanelManager.Instance.Create<HomePanel>(PanelAddress.Current);
+await panel.Show();
+// Đóng từ code game:
+await PanelManager.Instance.Close<HomePanel>();
 ```
 
-## Tween Transitions
+Host giữ một presenter cho mỗi panel instance, dispose lúc teardown, bind/render lại khi mở panel cache. Không chạy đồng thời controller sample và presenter khác trên cùng panel. PanelManager không tự cài service feature.
 
-Panels use one `UITweenPlayer` directly:
-
-- **Auto** (default) collects `UITweenBase` components below the player,
-  including inactive children. Collection stops at a nested `UITweenPlayer`, so
-  a child player always owns its own effects.
-- **Manual** stores `TweenTargetGroup` entries. Every group has one target and
-  a serialized list of effects; no child tween components are required. The
-  Inspector presents each target as a card with a contextual `+` menu for
-  adding an effect.
-
-Invalid or destroyed effect targets are
-skipped with a contextual warning; they do not fail the rest of a show/hide
-operation.
-
-## Tween Settings
-
-Create timing preset assets from `Assets/Create/Dreamy/UI/Tween Preset` and
-assign them by type in `TweenPresetLibrary`. Manual effects receive their
-matching preset as soon as they are created in the Inspector.
-
-Each tween can independently override ease, duration, and delay for show and
-hide. Auto components retain previously authored non-zero delays; enable
-`Override Delay In/Out` to explicitly replace a preset delay with zero.
-
-Defaults resolve through the effect's assigned preset, then
-`Resources/Dreamy/UI/TweenPresetLibrary`, then the original
-`Resources/Tween/<Type>TweenSettings` path (Scale, Fade, Move, Rotate, Size),
-then code defaults. Component `Reset` loads and assigns the matching preset.
-Manual effects receive it when added in the Inspector; unassigned effects
-inherit it at runtime. Library mappings support custom asset locations without
-changing resource paths in code.
-
-`UITweenPlayer` plays effects only; it does not own stagger timing. For target
-or item sequencing, add one `TweenDelayControl` above the animated hierarchy
-and add `TweenDelayByIndex` to each item group. The control assigns group
-indexes in hierarchy order, applies `Show Interval`, and uses the small
-`Hide Interval` in reverse group order by default. Every tween in a marked
-group's subtree receives the same delay; a nested marker starts a separate
-group and takes precedence for its descendants. This works for Auto components
-and Manual definitions bound to a target in the marked subtree. Call
-`ApplyDelays()` after adding or reordering groups. `ClearDelays()` restores
-each effect's configured preset/override delay. The index delay replaces the
-configured delay and never mutates shared settings assets.
-`FadeTweenEffect` adds a `CanvasGroup` to its target when needed.
-
-## Progress and shine
-
-`UIProgressBar` renders a normalized value through an `Image` configured as
-Filled and can animate to a new value with DOTween. `UIShineWave` applies the
-included `Dreamy/UI/Shine Wave` shader to a `Graphic` with an isolated runtime
-material, so its wave never changes a shared UI material. Set `Rotation` per
-wave to orient its streak. Add one `UIShineWaveController` to the parent of
-multiple waves to trigger idle waves with randomized interval, duration, and
-rotation. Waves register and unregister themselves as item prefabs spawn or
-despawn below that parent. Configure several `Wave Patterns`; every pattern
-defines its burst size, delay between streaks, cooldown, duration, and rotation
-range, and the controller chooses one pattern per burst.
-
-`UIScalable` can optionally run a lightweight idle pulse. Pointer press stops
-the idle tween; release completes its feedback animation and resumes idle.
-
-## Scope
-
-This package owns reusable runtime UI helpers. Game-specific popups, concrete panel prefabs, scene flow, sound routing, and localization belong in the game template or game project.
+Build Addressables content cho target trước khi thử player. AssetLoader cache prefab; đóng panel không tự unload cache. Chỉ unload sau khi mọi instance/consumer đã kết thúc.

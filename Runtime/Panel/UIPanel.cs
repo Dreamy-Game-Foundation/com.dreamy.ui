@@ -14,6 +14,7 @@ namespace Dreamy.UI
         private CancellationTokenSource tokenSource;
         private PanelState state = PanelState.Hidden;
         private int operationVersion;
+        private PanelPresenterHost presenterHost;
 
         public abstract bool CanBack { get; }
         public virtual UILayer Layer => UILayer.Screen;
@@ -57,11 +58,17 @@ namespace Dreamy.UI
 
             state = PanelState.Showing;
             int version = ResetToken();
-            OnPreShow?.Invoke();
-            gameObject.SetActive(true);
-            PanelManager.Instance.MarkShown(this);
             try
             {
+                OnPreShow?.Invoke();
+                gameObject.SetActive(true);
+                var factory = PanelManager.Instance.PresenterFactory;
+                if (factory != null)
+                {
+                    presenterHost ??= new PanelPresenterHost(factory, this);
+                    presenterHost.Show();
+                }
+                PanelManager.Instance.MarkShown(this);
                 await ShowTween();
                 if (version != operationVersion)
                 {
@@ -75,6 +82,7 @@ namespace Dreamy.UI
             {
                 if (version == operationVersion)
                 {
+                    ReleasePresenter();
                     state = PanelState.Hidden;
                     if (PanelManager.HasInstance)
                     {
@@ -87,6 +95,7 @@ namespace Dreamy.UI
             {
                 if (version == operationVersion)
                 {
+                    ReleasePresenter();
                     state = PanelState.Hidden;
                     PanelManager.Instance.MarkHidden(this);
                     gameObject.SetActive(false);
@@ -121,6 +130,7 @@ namespace Dreamy.UI
                 PanelManager.Instance.CompletePanelHide(this);
                 state = PanelState.Hidden;
 
+                ReleasePresenter();
                 OnPostHide?.Invoke();
 
                 if (CanCache)
@@ -141,6 +151,7 @@ namespace Dreamy.UI
                         PanelManager.Instance.MarkHidden(this);
                         PanelManager.Instance.CompletePanelHide(this);
                         state = PanelState.Hidden;
+                        ReleasePresenter();
                     }
                     else
                     {
@@ -190,8 +201,16 @@ namespace Dreamy.UI
             }
         }
 
+        internal void ReleasePresenter()
+        {
+            var host = presenterHost;
+            presenterHost = null;
+            host?.Dispose();
+        }
+
         protected virtual void OnDestroy()
         {
+            ReleasePresenter();
             tokenSource?.Cancel();
             tokenSource?.Dispose();
             ResolveTweenPlayer()?.Kill();
@@ -204,9 +223,15 @@ namespace Dreamy.UI
 
         protected virtual void OnDisable()
         {
+            ReleasePresenter();
             if (state == PanelState.Showing || state == PanelState.Hiding)
             {
                 tokenSource?.Cancel();
+            }
+            else if (state == PanelState.Shown)
+            {
+                state = PanelState.Hidden;
+                if (PanelManager.HasInstance) PanelManager.Instance.MarkHidden(this);
             }
         }
 

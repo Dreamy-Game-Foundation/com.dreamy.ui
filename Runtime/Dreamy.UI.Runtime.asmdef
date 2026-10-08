@@ -6,7 +6,8 @@
         "Dreamy.Assets.Runtime",
         "UniTask",
         "DOTween.Modules",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Dreamy.UI.Presentation"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

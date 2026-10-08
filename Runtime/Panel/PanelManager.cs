@@ -21,6 +21,20 @@ namespace Dreamy.UI
             new Dictionary<UIPanel, UIPanel>();
         private readonly SemaphoreSlim transitionLock = new SemaphoreSlim(1, 1);
 
+        private PanelPresenterFactory presenterFactory;
+
+        public PanelPresenterFactory PresenterFactory
+        {
+            get => presenterFactory;
+            set
+            {
+                if (ReferenceEquals(presenterFactory, value)) return;
+                presenterFactory = value;
+                foreach (var panel in panels.ToArray())
+                    if (panel != null) panel.ReleasePresenter();
+            }
+        }
+
         public UIPanel LastPanel
         {
             get
@@ -81,60 +95,70 @@ namespace Dreamy.UI
             }
         }
 
-        public async UniTask<TPanel> Create<TPanel>(string address) where TPanel : UIPanel
+        public UniTask<TPanel> Create<TPanel>(string address) where TPanel : UIPanel
+            => CreatePanel<TPanel>(() => AssetLoader.LoadAsync<GameObject>(address), address);
+
+        public UniTask<TPanel> Create<TPanel>(GameObject prefab) where TPanel : UIPanel
         {
-            if (TryGet(out TPanel existingPanel))
-            {
-                return existingPanel;
-            }
+            if (prefab == null) throw new ArgumentNullException(nameof(prefab));
+            return CreatePanel<TPanel>(() => UniTask.FromResult(prefab), prefab.name);
+        }
 
+        private async UniTask<TPanel> CreatePanel<TPanel>(Func<UniTask<GameObject>> load, string source)
+            where TPanel : UIPanel
+        {
             Type panelType = typeof(TPanel);
-            if (creationRequests.TryGetValue(panelType, out UniTaskCompletionSource<UIPanel> pendingRequest))
-            {
+            // Init registers panels before PostInit finishes: wait for the request first.
+            if (creationRequests.TryGetValue(panelType, out var pendingRequest))
                 return (TPanel)await pendingRequest.Task;
-            }
+            if (TryGet(out TPanel existingPanel)) return existingPanel;
 
-            UniTaskCompletionSource<UIPanel> completionSource =
-                new UniTaskCompletionSource<UIPanel>();
+            var completionSource = new UniTaskCompletionSource<UIPanel>();
             creationRequests.Add(panelType, completionSource);
-
+            GameObject instance = null;
             try
             {
-                GameObject prefab = await AssetLoader.LoadAsync<GameObject>(address);
-                GameObject instance = Instantiate(prefab, transform);
+                var prefab = await load();
+                if (this == null) throw new OperationCanceledException("Panel manager was destroyed.");
+                instance = Instantiate(prefab, transform);
                 TPanel panel = instance.GetComponent<TPanel>();
-
                 if (panel == null)
-                {
-                    Destroy(instance);
                     throw new MissingComponentException(
-                        $"Addressable UI prefab '{address}' does not contain {typeof(TPanel).Name}.");
-                }
+                        $"UI prefab '{source}' does not contain {typeof(TPanel).Name}.");
 
                 instance.transform.SetParent(GetLayerRoot(panel.Layer), false);
                 await panel.Init();
                 await panel.PostInit();
+                if (this == null || panel == null)
+                    throw new OperationCanceledException("Panel owner was destroyed during initialization.");
                 completionSource.TrySetResult(panel);
                 return panel;
             }
             catch (Exception exception)
             {
+                if (instance != null)
+                {
+                    var panel = instance.GetComponent<UIPanel>();
+                    if (panel != null) Unregister(panel);
+                    Destroy(instance);
+                }
                 completionSource.TrySetException(exception);
                 throw;
             }
-            finally
-            {
-                creationRequests.Remove(panelType);
-            }
+            finally { creationRequests.Remove(panelType); }
         }
 
         public async UniTask<TPanel> Show<TPanel>(string address) where TPanel : UIPanel
         {
-            if (!TryGet(out TPanel panel))
-            {
-                panel = await Create<TPanel>(address);
-            }
+            TPanel panel = await Create<TPanel>(address);
 
+            await panel.Show();
+            return panel;
+        }
+
+        public async UniTask<TPanel> Show<TPanel>(GameObject prefab) where TPanel : UIPanel
+        {
+            TPanel panel = await Create<TPanel>(prefab);
             await panel.Show();
             return panel;
         }

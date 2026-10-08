@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Added a shared non-panel presenter host and optional ticking contract; activate panels before presenter Show for coroutine-based reveals.
+
+- Added an engine-independent presenter factory/host and automatic UIPanel lifecycle integration, plus prefab Create/Show overloads.
+
 - Removed effect-level stagger timing from `UITweenPlayer`. `TweenDelayControl`
   now owns show/hide group delays through `TweenDelayByIndex`.
 - Added `UITweenPlayer`, a single Auto/Manual hybrid player that excludes

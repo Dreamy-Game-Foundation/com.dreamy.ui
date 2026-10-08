@@ -18,8 +18,9 @@ Dependency trực tiếp theo package.json:
 
 | Assembly | Reference | Phạm vi |
 | --- | --- | --- |
+| `Dreamy.UI.Presentation` | None | Engine-independent presenter contract/factory/host |
 | `Dreamy.UI.Editor` | Dreamy.UI.Runtime | Chỉ Editor |
-| `Dreamy.UI.Runtime` | Dreamy.Core.Runtime, Dreamy.Assets.Runtime, UniTask, DOTween.Modules, Unity.TextMeshPro | Runtime |
+| `Dreamy.UI.Runtime` | Dreamy.Core.Runtime, Dreamy.Assets.Runtime, Dreamy.UI.Presentation, UniTask, DOTween.Modules, Unity.TextMeshPro | Runtime |
 
 Trong asmdef của game, thêm assembly chứa API trực tiếp sử dụng. Code bootstrap reference thêm Core/DataConfig/Datasave/Economy theo nhu cầu; code async reference UniTask. Code gọi type sample reference assembly sample. Giữ Editor reference trong asmdef Editor-only.
 
@@ -78,3 +79,18 @@ await PanelManager.Instance.Close<HomePanel>();
 Host giữ một presenter cho mỗi panel instance, dispose lúc teardown, bind/render lại khi mở panel cache. Không chạy đồng thời controller sample và presenter khác trên cùng panel. PanelManager không tự cài service feature.
 
 Build Addressables content cho target trước khi thử player. AssetLoader cache prefab; đóng panel không tự unload cache. Chỉ unload sau khi mọi instance/consumer đã kết thúc.
+
+## Presenter factory
+
+Register constructors once at the composition root and assign `PanelManager.Instance.PresenterFactory`.
+
+```csharp
+var factory = new PanelPresenterFactory();
+factory.Register<SettingsPanel>(view => new SettingsPresenter(settingsService, view));
+PanelManager.Instance.PresenterFactory = factory;
+await PanelManager.Instance.Show<SettingsPanel>(settingsAddress);
+```
+
+The example feature types come from the Settings sample. Presenters implement `IPanelPresenter` (`Show`/`Dispose`) in the engine-independent `Dreamy.UI.Presentation` assembly. Add its asmdef reference in callers and presenter assemblies. Normal Show/Transition and direct panel.Show create presenters before showing; hide completion, disable, destroy and failed show release them. Reopen creates a new presenter. Register all features in one factory; replacing it releases active presenters. Unregistered panels need no presenter. Create/Show also accept a GameObject prefab, sharing initialization deduplication with Addressables creation.
+
+HUD/non-panel views may use PresenterViewHost.Initialize(factory, view), or their feature installer's Attach helper. This host handles enable/disable/destroy; presenters implementing ITickedPanelPresenter receive LateUpdate ticks. UIPanel activates its GameObject before presenter.Show so views can start restore/reveal coroutines safely. Tutorial retains its target-aware controller while using the same managed host.

@@ -6,7 +6,9 @@
         "DOTween.Modules",
         "UnityEditor.TestRunner",
         "UnityEngine.TestRunner",
-        "UniTask"
+        "UniTask",
+        "Dreamy.UI.Presentation",
+        "Dreamy.Core.Runtime"
     ],
     "includePlatforms": [
         "Editor"

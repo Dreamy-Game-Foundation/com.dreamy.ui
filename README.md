@@ -4,6 +4,8 @@ Package thuộc Dreamy Game Studio. Hướng dẫn dưới đây mô tả cấu 
 
 ## Cài package
 
+Phiên bản hiện tại: **1.0.5** — Git tag `v1.0.5`. Version này tiếp nối tag 1.x cao nhất đã phát hành; các tag 0.x cũ được giữ nguyên để không làm hỏng tham chiếu lịch sử.
+
 Dùng Unity 6000.0 trở lên. Sandbox đã tham chiếu package bằng `file:../LocalPackages/com.dreamy.ui`. Project khác dùng Package Manager > + > Install package from disk và chọn package.json, hoặc Git URL của repository nội bộ. Cài cả dependency Dreamy/Git vào manifest của game; version dependency không tự cấu hình registry riêng.
 
 Dependency trực tiếp theo package.json:
@@ -12,7 +14,7 @@ Dependency trực tiếp theo package.json:
 - `com.cysharp.unitask` (2.5.10)
 - `com.demigiant.dotween` (0.0.3)
 - `com.dreamy.core` (1.1.2)
-- `com.dreamy.assets` (0.1.1)
+- `com.dreamy.assets` (1.0.1)
 
 ## Cấu trúc và asmdef
 

@@ -1,6 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [1.0.5] - 2026-10-15
+
+- Resume increasing release versions above the highest existing v1.x tag after the 0.2.0 version regression.
+- Synchronize package metadata and installation documentation with v1.0.5; preserve all existing tags and historical changelog entries.
+- Update the Dreamy Assets dependency to 1.0.1.
 
 - Added a shared non-panel presenter host and optional ticking contract; activate panels before presenter Show for coroutine-based reveals.
 

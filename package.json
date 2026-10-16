@@ -1,6 +1,6 @@
 {
   "name": "com.dreamy.ui",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "displayName": "Dreamy UI",
   "description": "Reusable Unity UI panel, tab, button, safe area, and tween helpers inspired by the local Base.UI flow.",
   "unity": "6000.0",

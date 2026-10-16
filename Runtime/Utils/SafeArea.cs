@@ -37,6 +37,15 @@ namespace Dreamy.UI
 
             Rect safeArea = Screen.safeArea;
             lastSafeArea = safeArea;
+#if UNITY_EDITOR
+            // Device Simulator can briefly report device pixel bounds while Screen uses
+            // the resized Game View dimensions. Never turn those into anchors above 1.
+            if (safeArea.xMin < 0f || safeArea.yMin < 0f ||
+                safeArea.xMax > Screen.width || safeArea.yMax > Screen.height)
+            {
+                safeArea = new Rect(0f, 0f, Screen.width, Screen.height);
+            }
+#endif
             lastScreenSize = new Vector2(Screen.width, Screen.height);
 
             Vector2 anchorMin = safeArea.position;

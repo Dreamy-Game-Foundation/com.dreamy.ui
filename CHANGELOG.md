@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.6] - 2026-10-16
+
+- In Editor/Device Simulator, fall back to the current Screen bounds when reported safe-area pixels exceed those bounds, preventing UI anchors outside the viewport. Player behavior remains unchanged.
+- Existing five PanelPresenterTests failures reproduce with the previous SafeArea implementation; this patch does not change presenter lifecycle.
+
 ## [1.0.5] - 2026-10-15
 
 - Resume increasing release versions above the highest existing v1.x tag after the 0.2.0 version regression.
